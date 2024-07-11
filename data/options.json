@@ -1,0 +1,12 @@
+{
+  "comelit-username": "hsrv-user",
+  "comelit-password": "sf1nE9bjPc",
+  "comelit-HubIPAddress": "192.168.1.51",
+  "comelit-HubMACAddress": "00252917071D",
+  "comelit-ROOTelement": "GEN#17#13#1",
+  "polling": 60,
+  "mosquitto-username": "mosquitto",
+  "mosquitto-password": "raspberry",
+  "mosquitto-IPAddress": "192.168.1.63",
+  "init-device-config": true
+}

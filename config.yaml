@@ -1,0 +1,33 @@
+name: "Comelit Integration"
+description: "Integrazione alla domotica Comelit"
+version: "1.0.26"
+slug: "comelit-integration"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+options:
+  comelit-username: "hsrv-user"
+  comelit-password: "sf1nE9bjPc"
+  comelit-HubIPAddress: "192.168.1.51"
+  comelit-HubMACAddress: "00252917071D"
+  comelit-ROOTelement: "GEN#17#13#1"
+  polling: 60
+  mosquitto-username: "mosquitto"
+  mosquitto-password: "raspberry"
+  mosquitto-IPAddress: "192.168.1.63"
+  init-device-config: false
+schema:
+  comelit-username: "str"
+  comelit-password: "password"
+  comelit-HubIPAddress: "str"
+  comelit-HubMACAddress: "str"
+  comelit-ROOTelement: "str"
+  polling: int
+  mosquitto-username: "str"
+  mosquitto-password: "password"
+  mosquitto-IPAddress: "str"
+  init-device-config: bool

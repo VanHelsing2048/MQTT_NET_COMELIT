@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MQTT_NET_COMELIT": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

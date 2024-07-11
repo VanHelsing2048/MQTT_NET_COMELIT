@@ -1,0 +1,21 @@
+configuration:
+  comelit-username:
+    name: Comelit HUB MQTT Broker Username
+  comelit-password:
+    name: Comelit HUB MQTT Broker Password
+  comelit-HubIPAddress:
+    name: Comelit HUB IP Address
+  comelit-HubMACAddress:
+    name: Comelit HUB MAC Address
+  comelit-ROOTelement:
+    name: Comelit HUB MQTT ROOT Element ID
+  polling:
+    name: Comelit polling time to keep service alive [sec]
+  mosquitto-username:
+    name: Home Assistant Mosquitto MQTT Broker Username
+  mosquitto-password:
+    name: Home Assistant Mosquitto MQTT Broker Password
+  mosquitto-IPAddress:
+    name: Home Assistant Mosquitto MQTT Broker IPAddress
+  init-device-config:
+    name: Initialize devices configuration (MQTT Discovery)
