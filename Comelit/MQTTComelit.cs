@@ -25,6 +25,8 @@ namespace MQTT_NET_COMELIT.Comelit
             ServerIPAddress = ip;
             ComelitROOTElement = root;
 
+            _pollingMs = pollingTime * 1000;
+
             SubscribeTopic = $"HSrv/{HubMACAddress}/tx/{MQTTClientID}";
             PublishTopic = $"HSrv/{HubMACAddress}/rx/{MQTTClientID}";
 
