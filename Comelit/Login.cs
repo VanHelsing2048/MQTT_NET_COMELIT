@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Text;
 using static MQTT_NET_COMELIT.Comelit.JsonParsing;
 using static MQTT_NET_COMELIT.Utility.Utility;
+using static MQTT_NET_COMELIT.Comelit.ComelitMessages;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -21,7 +22,7 @@ namespace MQTT_NET_COMELIT.Comelit
             if (payload == null)
             {
                 WriteLog("Publishing to topic " + SubscribeTopic + " the ANNUNCE payload");
-                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Annunce) });
+                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildAnnounce()) });
             }
             else
             {
@@ -37,14 +38,14 @@ namespace MQTT_NET_COMELIT.Comelit
                                 Header GetAgent = JsonConvert.DeserializeObject<Header>(payload);
                                 Agent = GetAgent.OutData.FirstOrDefault().AgentID;
                                 WriteLog("Got AgentID. Starting with LOGIN payload");
-                                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Login.Replace("#agentID#", Agent)) });
+                                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildLogin(Agent)) });
                                 break;
 
                             case 2:
                                 Header GetToken = JsonConvert.DeserializeObject<Header>(payload);
                                 SessionToken = GetToken.SessionToken;
                                 WriteLog("Got SessionToken. Starting with STATUS payload");
-                                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Status.Replace("#sessionToken#", SessionToken).Replace("#OBJID#", ComelitROOTElement)) });
+                                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildStatus(SessionToken, ComelitROOTElement)) });
                                 break;
 
                             case 3:
