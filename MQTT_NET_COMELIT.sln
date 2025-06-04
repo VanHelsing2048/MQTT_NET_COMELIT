@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTT_NET_COMELIT", "MQTT_NET_COMELIT.csproj", "{673006ED-7C78-495F-80B4-7808E3ED0F26}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTT_NET_COMELIT.Tests", "tests/MQTT_NET_COMELIT.Tests/MQTT_NET_COMELIT.Tests.csproj", "{F78D14FF-0E4A-4876-9FBC-E79E4F4EBF54}"
+EndProject
+Global
+GlobalSection(SolutionConfigurationPlatforms) = preSolution
+Debug|Any CPU = Debug|Any CPU
+Release|Any CPU = Release|Any CPU
+EndGlobalSection
+GlobalSection(ProjectConfigurationPlatforms) = postSolution
+{673006ED-7C78-495F-80B4-7808E3ED0F26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{673006ED-7C78-495F-80B4-7808E3ED0F26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{673006ED-7C78-495F-80B4-7808E3ED0F26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{673006ED-7C78-495F-80B4-7808E3ED0F26}.Release|Any CPU.Build.0 = Release|Any CPU
+{F78D14FF-0E4A-4876-9FBC-E79E4F4EBF54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{F78D14FF-0E4A-4876-9FBC-E79E4F4EBF54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{F78D14FF-0E4A-4876-9FBC-E79E4F4EBF54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{F78D14FF-0E4A-4876-9FBC-E79E4F4EBF54}.Release|Any CPU.Build.0 = Release|Any CPU
+EndGlobalSection
+EndGlobal
