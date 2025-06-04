@@ -12,7 +12,7 @@ internal class Program
     static readonly string ConfigFile = Path.Combine(Environment.CurrentDirectory, "data", "options.json");
     static Config Config;
 
-    private static void Main()
+    private static async Task Main()
     {
         if (File.Exists(ConfigFile))
         {
@@ -25,11 +25,11 @@ internal class Program
             {
                 WriteLog("Starting Comelit MQTT");
                 MQTTComelit = new MQTTComelit(Config.ComelitUsername, Config.ComelitPassword, Config.ComelitHUBMAC, Config.ComelitHUBIP, Config.ComelitHUBROOTElement, Config.PollingTime);
-                while (!MQTTComelit.ConnectedAndLoggedIn) { WriteLog("Waiting for Comelit..."); Task.Delay(1000).Wait(); }
+                while (!MQTTComelit.ConnectedAndLoggedIn) { WriteLog("Waiting for Comelit..."); await Task.Delay(1000); }
 
                 WriteLog("Starting HA MQTT");
                 MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
-                while (!MQTTHomeAssistant.ConnectedAndLoggedIn) { WriteLog("Waiting for HA..."); Task.Delay(1000).Wait(); }
+                while (!MQTTHomeAssistant.ConnectedAndLoggedIn) { WriteLog("Waiting for HA..."); await Task.Delay(1000); }
 
                 MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
 
@@ -43,7 +43,7 @@ internal class Program
                             if (dev != null && dev.ConfigReadyToSend)
                             {
                                 MQTTHomeAssistant.Publish(dev.ConfigTopic, dev.ConfigPayload, true);
-                                Task.Delay(50).Wait();
+                                await Task.Delay(50);
                             }
                         }
                     }
@@ -63,13 +63,13 @@ internal class Program
                             dev?.Type == Enums.OBJECT_TYPE.RULE)
                         {
                             MQTTHomeAssistant.Publish(dev.StatusTopic, $"{dev.StatusONOFF}");
-                            Task.Delay(50).Wait();
+                            await Task.Delay(50);
                         }
                     }
                 }
                 if (MQTTComelit.PollingDevice != null) MQTTComelit.StartPolling();
                 WriteLog("Ready");
-                while (MQTTComelit.ConnectedAndLoggedIn && MQTTHomeAssistant.ConnectedAndLoggedIn) { Task.Delay(1000).Wait(); }
+                while (MQTTComelit.ConnectedAndLoggedIn && MQTTHomeAssistant.ConnectedAndLoggedIn) { await Task.Delay(1000); }
             }
         }
         else

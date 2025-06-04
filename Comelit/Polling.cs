@@ -28,14 +28,14 @@ namespace MQTT_NET_COMELIT.Comelit
 
         public void StartPolling()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (ConnectedAndLoggedIn)
                 {
                     WriteLog($"Polling digital light {PollingDevice.ID}");
                     IsPolling = true;
                     MQTTClient.PublishAsync(new MQTTnet.MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Status.Replace("#sessionToken#", SessionToken).Replace("#OBJID#", PollingDevice.ID)) });
-                    Task.Delay(_pollingMs).Wait();
+                    await Task.Delay(_pollingMs);
                 }
             });
         }
