@@ -1,6 +1,7 @@
 ﻿using MQTT_NET_COMELIT.Comelit.DevicesStructure;
 using System.Text;
 using static MQTT_NET_COMELIT.Utility.Utility;
+using static MQTT_NET_COMELIT.Comelit.ComelitMessages;
 
 namespace MQTT_NET_COMELIT.Comelit
 {

@@ -2,6 +2,7 @@
 using MQTTnet.Client;
 using System.Text;
 using static MQTT_NET_COMELIT.Utility.Utility;
+using static MQTT_NET_COMELIT.Comelit.ComelitMessages;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -32,9 +33,6 @@ namespace MQTT_NET_COMELIT.Comelit
         string Agent = string.Empty;
         string SessionToken = string.Empty;
 
-        const string Annunce = "{\"req_type\": 13,\"seq_id\": 1,\"req_sub_type\": -1,\"agent_type\": 0}";
-        const string Login = "{\"req_type\": 5,\"seq_id\": 2,\"req_sub_type\": -1,\"agent_type\": 0,\"agent_id\": #agentID#,\"user_name\": \"admin\",\"password\": \"admin\"}";
-        const string Status = "{\"req_type\": 0,\"seq_id\": 3,\"req_sub_type\": -1,\"sessiontoken\": \"#sessionToken#\",\"obj_id\": \"#OBJID#\",\"detail_level\": 1}"; //ROOT = GEN#17#13#1
 
         private async Task StartMQTT()
         {
