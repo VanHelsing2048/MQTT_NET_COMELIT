@@ -54,7 +54,7 @@ namespace MQTT_NET_COMELIT.Comelit
                                 {
                                     WriteLog("Create structure and subscribe to value change event");
                                     CreateStructure(ROOT);
-                                    SubcribeToDeviceValueChange();
+                                    SubscribeToDeviceValueChange();
                                     if (MQTTLoggedIn) WriteLog("Comelit devices list updated!");
                                 }
                                 foreach (Area a in HomeStructure.Areas)

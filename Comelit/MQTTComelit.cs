@@ -87,8 +87,8 @@ namespace MQTT_NET_COMELIT.Comelit
                     {
                         case "invalid token":
                             LoginSequence();
-                            // Rilanciare la sottocrizione a tutti gli elementi con il nuovo sessionToken
-                            SubcribeToDeviceValueChange();
+                            // Rilanciare la sottoscrizione a tutti gli elementi con il nuovo sessionToken
+                            SubscribeToDeviceValueChange();
                             // Inviare nuovamente il comando
                             WriteLog("Sending LastCommand after LoginSequence: " + LastCommand);
                             MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(LastCommand) });
@@ -244,7 +244,7 @@ namespace MQTT_NET_COMELIT.Comelit
             switch (elData.SubType)
             {
                 case Enums.OBJECT_SUBTYPE.DIGITAL_LIGHT:
-                    //Subsribe to status changed event
+                    //Subscribe to status changed event
                     DigitalLight light = JsonConvert.DeserializeObject<DigitalLight>(JsonConvert.SerializeObject(elData));
                     light.AreaName = area;
                     Devices.CreateDigitalLightConfig(light);
@@ -283,7 +283,7 @@ namespace MQTT_NET_COMELIT.Comelit
             return output;
         }
 
-        private void SubcribeToDeviceValueChange()
+        private void SubscribeToDeviceValueChange()
         {
             foreach (Area area in HomeStructure.Areas)
             {
