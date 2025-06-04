@@ -1,6 +1,7 @@
 ﻿using MQTT_NET_COMELIT.Comelit.DevicesStructure;
 using System.Text;
 using static MQTT_NET_COMELIT.Utility.Utility;
+using static MQTT_NET_COMELIT.Comelit.ComelitMessages;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -34,7 +35,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 {
                     WriteLog($"Polling digital light {PollingDevice.ID}");
                     IsPolling = true;
-                    MQTTClient.PublishAsync(new MQTTnet.MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Status.Replace("#sessionToken#", SessionToken).Replace("#OBJID#", PollingDevice.ID)) });
+                    MQTTClient.PublishAsync(new MQTTnet.MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildStatus(SessionToken, PollingDevice.ID)) });
                     Task.Delay(_pollingMs).Wait();
                 }
             });

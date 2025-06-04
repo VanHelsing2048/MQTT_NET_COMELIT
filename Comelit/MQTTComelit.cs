@@ -6,6 +6,7 @@ using System.Text;
 using System.Xml.Linq;
 using static MQTT_NET_COMELIT.Comelit.JsonParsing;
 using static MQTT_NET_COMELIT.Utility.Utility;
+using static MQTT_NET_COMELIT.Comelit.ComelitMessages;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -14,8 +15,6 @@ namespace MQTT_NET_COMELIT.Comelit
         public MQTTHomeAssistant MQTTHomeAssistant { get; set; }
         private string LastCommand = string.Empty;
 
-        const string OnOffCommand = "{\"req_type\": 1,\"seq_id\": 4,\"req_sub_type\": 3,\"act_type\": 0,\"sessiontoken\": \"#sessionToken#\",\"obj_id\": \"#objID#\",\"act_params\": [#toggle#]}";
-        const string Subscribe = "{\"req_type\": 3,\"seq_id\": 4,\"req_sub_type\": 5,\"sessiontoken\": \"#sessionToken#\",\"obj_id\": \"#objID#\"}";
 
         public MQTTComelit(string username, string password, string mac, string ip, string root, int pollingTime)
         {
@@ -121,17 +120,17 @@ namespace MQTT_NET_COMELIT.Comelit
                     case Enums.OBJECT_SUBTYPE.DIGITAL_LIGHT:
                         if (payload == "ON") { device.Status = "1"; }
                         if (payload == "OFF") { device.Status = "0"; }
-                        LastCommand = OnOffCommand.Replace("#sessionToken#", SessionToken).Replace("#objID#", device.ID).Replace("#toggle#", device.Status);
+                        LastCommand = BuildOnOffCommand(SessionToken, device.ID, device.Status);
                         break;
                     case Enums.OBJECT_SUBTYPE.IRRIGATION_VALVE:
                         if (payload == "ON") { device.Status = "1"; }
                         if (payload == "OFF") { device.Status = "0"; }
-                        LastCommand = OnOffCommand.Replace("#sessionToken#", SessionToken).Replace("#objID#", device.ID).Replace("#toggle#", device.Status);
+                        LastCommand = BuildOnOffCommand(SessionToken, device.ID, device.Status);
                         break;
                     case Enums.OBJECT_SUBTYPE.OTHER_DIGIT:
                         if (payload == "ON") { device.Status = "1"; }
                         if (payload == "OFF") { device.Status = "0"; }
-                        LastCommand = OnOffCommand.Replace("#sessionToken#", SessionToken).Replace("#objID#", device.ID).Replace("#toggle#", device.Status);
+                        LastCommand = BuildOnOffCommand(SessionToken, device.ID, device.Status);
                         break;
                 }
                 WriteLog($"Comelit {device.SubType}: {LastCommand}");
@@ -293,7 +292,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 {
                     if (device != null && device.CanSubscribe)
                     {
-                        MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(Subscribe.Replace("#sessionToken#", SessionToken).Replace("#objID#", device.ID)) });
+                        MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildSubscribe(SessionToken, device.ID)) });
                     }
                 }
             }
