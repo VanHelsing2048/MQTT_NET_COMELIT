@@ -30,15 +30,15 @@ configuration looks like:
 
 ```json
 {
-  "comelit-username": "hsrv-user",
+  "comelit-username": "your-username",
   "comelit-password": "your-password",
-  "comelit-HubIPAddress": "192.168.1.51",
-  "comelit-HubMACAddress": "00252917071D",
+  "comelit-HubIPAddress": "your-IP",
+  "comelit-HubMACAddress": "your-hub-MAC",
   "comelit-ROOTelement": "GEN#17#13#1",
   "polling": 60,
-  "mosquitto-username": "mosquitto",
-  "mosquitto-password": "raspberry",
-  "mosquitto-IPAddress": "192.168.1.63",
+  "mosquitto-username": "mosquitto-username",
+  "mosquitto-password": "mosquitto-password",
+  "mosquitto-IPAddress": "mosquitto-ip",
   "init-device-config": true
 }
 ```
