@@ -1,0 +1,30 @@
+name: Build ARM Executables
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [ linux-arm, linux-arm64 ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+      - run: dotnet restore MQTT_NET_COMELIT.sln
+      - run: dotnet test MQTT_NET_COMELIT.sln --no-build
+      - run: |
+          dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained false -o publish/${{ matrix.runtime }}
+      - name: Archive output
+        run: |
+          cd publish/${{ matrix.runtime }}
+          zip -r ../../MQTT_NET_COMELIT-${{ matrix.runtime }}.zip .
+      - uses: actions/upload-artifact@v3
+        with:
+          name: MQTT_NET_COMELIT-${{ matrix.runtime }}
+          path: MQTT_NET_COMELIT-${{ matrix.runtime }}.zip
