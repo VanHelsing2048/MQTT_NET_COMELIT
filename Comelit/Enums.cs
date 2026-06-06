@@ -1,6 +1,6 @@
-﻿using MQTT_NET_COMELIT.Comelit.DevicesStructure;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using static MQTT_NET_COMELIT.Comelit.Enums;
-using static MQTT_NET_COMELIT.Comelit.JsonParsing;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -56,10 +56,12 @@ namespace MQTT_NET_COMELIT.Comelit
             BLIND = 2,
             LIGHT = 3,
             IRRIGATION = 4,
+            AUTOMATION = 5,
             THERMOSTAT = 9,
             OUTLET = 10,
             POWER_SUPPLIER = 11,
             INPUT = 13,
+            SCENARIO = 1000,
             ZONE = 1001,
             RULE = 1002
         }
@@ -75,6 +77,7 @@ namespace MQTT_NET_COMELIT.Comelit
             OTHER_TMP = 6,
             ELECTRIC_BLIND = 7,
             IRRIGATION_VALVE = 8,
+            AUTOMATION = 10,
             CLIMA_TERM = 12,
             GENERIC_ZONE = 13,
             COUNTER = 14,
@@ -121,6 +124,25 @@ namespace MQTT_NET_COMELIT.Comelit
             public string Status { get; set; }
             [Newtonsoft.Json.JsonProperty("powerst")]
             public DEVICE_STATUS PowerSt { get; set; }
+            public string Bright { get; internal set; }
+            public string OpenStatus { get; internal set; }
+            public string Temperatura { get; internal set; }
+            public string Umidita { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("soglia_attiva")]
+            public string SogliaAttiva { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("soglia_attiva_umi")]
+            public string SogliaAttivaUmi { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("est_inv")]
+            public string EstInv { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("auto_man")]
+            public string AutoMan { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("auto_man_umi")]
+            public string AutoManUmi { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("instant_power")]
+            public string InstantPower { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("label_value")]
+            public string LabelValue { get; internal set; }
+
             public override string ToString()
             {
                 return Descrizione;
@@ -217,6 +239,14 @@ namespace MQTT_NET_COMELIT.Comelit
             public string PlaceID { get; set; }
             [Newtonsoft.Json.JsonProperty("num_ingresso")]
             public string NumIngresso { get; set; }
+            [Newtonsoft.Json.JsonProperty("instant_power")]
+            public string InstantPower { get; set; }
+            [Newtonsoft.Json.JsonProperty("label_value")]
+            public string LabelValue { get; set; }
+            [Newtonsoft.Json.JsonProperty("visible")]
+            public string Visible { get; set; }
+            [Newtonsoft.Json.JsonProperty("prod")]
+            public string Prod { get; set; }
             [Newtonsoft.Json.JsonProperty("zero_dimmer")]
             public string ZeroDimmer { get; set; }
             [Newtonsoft.Json.JsonProperty("presenza")]
@@ -476,7 +506,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
     public class Home : MainProperties
     {
-        public List<Area> Areas = new();
+        public List<Area> Areas = [];
         public override string ToString()
         {
             return $"ID:{ID} - Name:{Name}";
@@ -485,7 +515,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
     public class Area : MainProperties
     {
-        public List<DevicesStructure.Device> Devices { get; set; }
+        public List<Device> Devices { get; set; }
         public override string ToString()
         {
             return $"ID:{ID} - Name:{Name} - Devices:{Devices?.Count}";
@@ -508,54 +538,157 @@ namespace MQTT_NET_COMELIT.Comelit
 
     public class MQTTConfig
     {
-        public string name { get; set; }
-        public string object_id { get; set; }
-        public string unique_id { get; set; }
-        public string device_class { get; set; }
-        public string icon { get; set; }
-        public string command_topic { get; set; }
-        public string state_topic { get; set; }
-        public string off_delay { get; set; }
-        public MQTTDevice device { get; set; }
+        // Basic properties
+        public string Name { get; set; }
+        public string ObjectId { get; set; }
+        public string UniqueId { get; set; }
+        public string DeviceClass { get; set; }
+        public string Icon { get; set; }
+        public string CommandTopic { get; set; }
+        public string StateTopic { get; set; }
+        public string UnitOfMeasurement { get; set; }
+        public string StateClass { get; set; }
+        public int OffDelay { get; set; }
+        public MQTTDevice Device { get; set; }
+
+        // Availability
+        public string AvailabilityTopic { get; set; } = "home/inputs/comelit-available/state";
+        public string PayloadAvailable { get; set; } = "ON";
+        public string PayloadNotAvailable { get; set; } = "OFF";
+
+        // Light-specific properties
+        public string PayloadOn { get; set; }
+        public string PayloadOff { get; set; }
+        public string PayloadPress { get; set; }
+        public string BrightnessTopic { get; set; }
+        public string BrightnessStateTopic { get; set; }
+        public string BrightnessCommandTopic { get; set; }
+        public string BrightnessScale { get; set; }
+        public string RgbTopic { get; set; }
+        public string RgbStateTopic { get; set; }
+        public string RgbCommandTopic { get; set; }
+
+        // Climate-specific properties
+        public string CurrentTemperatureTopic { get; set; }
+        public string TemperatureStateTopic { get; set; }
+        public string TemperatureCommandTopic { get; set; }
+        public string ModeStateTopic { get; set; }
+        public string ModeCommandTopic { get; set; }
+        public string ActionTopic { get; set; }
+        public string MinTemp { get; set; }
+        public string MaxTemp { get; set; }
+        public string TempStep { get; set; }
+        public List<string> Modes { get; set; }
+        public List<string> FanModes { get; set; }
+        public string SwingMode { get; set; }
+        public string CurrentHumidityTopic { get; set; }
+        public string TargetHumidityCommandTopic { get; set; }
+        public string TargetHumidityStateTopic { get; set; }
+
+        // Cover-specific properties
+        public string PayloadOpen { get; set; }
+        public string PayloadClose { get; set; }
+        public string PayloadStop { get; set; }
+        public string PositionTopic { get; set; }
+        public string PositionOpenValue { get; set; }
+        public string PositionClosedValue { get; set; }
+        public string TiltCommandTopic { get; set; }
+        public string TiltStateTopic { get; set; }
+        public string TiltMin { get; set; }
+        public string TiltMax { get; set; }
+
+        private readonly JsonSerializerOptions options = new()
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
         public override string ToString()
         {
-            string offdelay = "";
-            if (!string.IsNullOrEmpty(off_delay))
+            // Serializza come oggetto intermedio per inserire i campi fissi
+            Dictionary<string, object> obj = new()
             {
-                offdelay = "\", \"off_delay\": \"" + off_delay;
-            }
-            string devclass = "";
-            if (!string.IsNullOrEmpty(device_class))
+                ["name"] = Name,
+                ["object_id"] = ObjectId,
+                ["unique_id"] = UniqueId,
+                ["state_topic"] = StateTopic,
+                ["unit_of_measurement"] = string.IsNullOrEmpty(UnitOfMeasurement) ? null : UnitOfMeasurement,
+                ["state_class"] = string.IsNullOrEmpty(StateClass) ? null : StateClass,
+                ["availability_topic"] = string.IsNullOrEmpty(AvailabilityTopic) ? null : AvailabilityTopic,
+                ["payload_available"] = string.IsNullOrEmpty(PayloadAvailable) ? null : PayloadAvailable,
+                ["payload_not_available"] = string.IsNullOrEmpty(PayloadNotAvailable) ? null : PayloadNotAvailable,
+                ["off_delay"] = OffDelay > 0 ? OffDelay : null,
+                ["device_class"] = string.IsNullOrEmpty(DeviceClass) ? null : DeviceClass,
+                ["command_topic"] = string.IsNullOrEmpty(CommandTopic) ? null : CommandTopic,
+                ["icon"] = string.IsNullOrEmpty(Icon) ? null : Icon,
+                ["device"] = Device,
+
+                // Light-specific
+                ["payload_on"] = string.IsNullOrEmpty(PayloadOn) ? null : PayloadOn,
+                ["payload_off"] = string.IsNullOrEmpty(PayloadOff) ? null : PayloadOff,
+                ["payload_press"] = string.IsNullOrEmpty(PayloadPress) ? null : PayloadPress,
+                ["brightness_topic"] = string.IsNullOrEmpty(BrightnessTopic) ? null : BrightnessTopic,
+                ["brightness_state_topic"] = string.IsNullOrEmpty(BrightnessStateTopic) ? null : BrightnessStateTopic,
+                ["brightness_command_topic"] = string.IsNullOrEmpty(BrightnessCommandTopic) ? null : BrightnessCommandTopic,
+                ["brightness_scale"] = string.IsNullOrEmpty(BrightnessScale) ? null : BrightnessScale,
+                ["rgb_topic"] = string.IsNullOrEmpty(RgbTopic) ? null : RgbTopic,
+                ["rgb_state_topic"] = string.IsNullOrEmpty(RgbStateTopic) ? null : RgbStateTopic,
+                ["rgb_command_topic"] = string.IsNullOrEmpty(RgbCommandTopic) ? null : RgbCommandTopic,
+
+                // Climate-specific
+                ["current_temperature_topic"] = string.IsNullOrEmpty(CurrentTemperatureTopic) ? null : CurrentTemperatureTopic,
+                ["temperature_state_topic"] = string.IsNullOrEmpty(TemperatureStateTopic) ? null : TemperatureStateTopic,
+                ["temperature_command_topic"] = string.IsNullOrEmpty(TemperatureCommandTopic) ? null : TemperatureCommandTopic,
+                ["mode_state_topic"] = string.IsNullOrEmpty(ModeStateTopic) ? null : ModeStateTopic,
+                ["mode_command_topic"] = string.IsNullOrEmpty(ModeCommandTopic) ? null : ModeCommandTopic,
+                ["action_topic"] = string.IsNullOrEmpty(ActionTopic) ? null : ActionTopic,
+                ["min_temp"] = string.IsNullOrEmpty(MinTemp) ? null : MinTemp,
+                ["max_temp"] = string.IsNullOrEmpty(MaxTemp) ? null : MaxTemp,
+                ["temp_step"] = string.IsNullOrEmpty(TempStep) ? null : TempStep,
+                ["modes"] = Modes?.Count > 0 ? Modes : null,
+                ["fan_modes"] = FanModes?.Count > 0 ? FanModes : null,
+                ["swing_mode"] = string.IsNullOrEmpty(SwingMode) ? null : SwingMode,
+                ["current_humidity_topic"] = string.IsNullOrEmpty(CurrentHumidityTopic) ? null : CurrentHumidityTopic,
+                ["target_humidity_command_topic"] = string.IsNullOrEmpty(TargetHumidityCommandTopic) ? null : TargetHumidityCommandTopic,
+                ["target_humidity_state_topic"] = string.IsNullOrEmpty(TargetHumidityStateTopic) ? null : TargetHumidityStateTopic,
+
+                // Cover-specific
+                ["payload_open"] = string.IsNullOrEmpty(PayloadOpen) ? null : PayloadOpen,
+                ["payload_close"] = string.IsNullOrEmpty(PayloadClose) ? null : PayloadClose,
+                ["payload_stop"] = string.IsNullOrEmpty(PayloadStop) ? null : PayloadStop,
+                ["position_topic"] = string.IsNullOrEmpty(PositionTopic) ? null : PositionTopic,
+                ["position_open_value"] = string.IsNullOrEmpty(PositionOpenValue) ? null : PositionOpenValue,
+                ["position_closed_value"] = string.IsNullOrEmpty(PositionClosedValue) ? null : PositionClosedValue,
+                ["tilt_command_topic"] = string.IsNullOrEmpty(TiltCommandTopic) ? null : TiltCommandTopic,
+                ["tilt_state_topic"] = string.IsNullOrEmpty(TiltStateTopic) ? null : TiltStateTopic,
+                ["tilt_min"] = string.IsNullOrEmpty(TiltMin) ? null : TiltMin,
+                ["tilt_max"] = string.IsNullOrEmpty(TiltMax) ? null : TiltMax,
+            };
+
+            // Rimuovi tutte le proprietà null
+            var keysToRemove = obj.Where(x => x.Value == null).Select(x => x.Key).ToList();
+            foreach (var key in keysToRemove)
             {
-                devclass = "\", \"device_class\": \"" + device_class;
+                obj.Remove(key);
             }
-            string command = "";
-            if (!string.IsNullOrEmpty(command_topic))
-            {
-                command = "\", \"command_topic\": \"" + command_topic;
-            }
-            string micon = "";
-            if (!string.IsNullOrEmpty(icon))
-            {
-                micon = "\", \"icon\": \"" + icon;
-            }
-            return "{\"name\": \"" + name + devclass + "\", \"object_id\": \"" + object_id + "\", \"unique_id\": \"" + unique_id + micon + command + offdelay + "\", \"state_topic\": \"" + state_topic + "\", \"device\": {" + device + "}";
+
+            return JsonSerializer.Serialize(obj, options);
         }
     }
 
+
     public class MQTTDevice
     {
-        public string identifiers { get; set; }
-        public string name { get; set; }
-        public string model { get; set; }
-        public string manufacturer { get; set; }
-        public string suggested_area { get; set; }
-
-        public override string ToString()
-        {
-            return "\"identifiers\": [\"" + identifiers + "\"], \"name\": \"" + name + "\", \"model\": \"" + model + "\", \"manufacturer\": \"" + manufacturer + "\", \"suggested_area\": \"" + suggested_area + "\"}";
-        }
+        [JsonPropertyName("identifiers")]
+        public List<string> Identifiers { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+        [JsonPropertyName("model")]
+        public string Model { get; set; }
+        [JsonPropertyName("manufacturer")]
+        public string Manufacturer { get; set; }
+        [JsonPropertyName("suggested_area")]
+        public string SuggestedArea { get; set; }
     }
 
 }

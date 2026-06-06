@@ -1,5 +1,4 @@
-﻿using MQTT_NET_COMELIT.Comelit.DevicesStructure;
-using MQTTnet;
+﻿using MQTTnet;
 using Newtonsoft.Json;
 using System.Text;
 using static MQTT_NET_COMELIT.Comelit.JsonParsing;
@@ -18,10 +17,10 @@ namespace MQTT_NET_COMELIT.Comelit
         {
             MQTTLoggedIn = false;
             PollingDevice = null;
-            WriteLog($"Login sequence: {payload}");
+            WriteLog($"Login sequence: {payload}", LogLevel.Debug);
             if (payload == null)
             {
-                WriteLog("Publishing to topic " + SubscribeTopic + " the ANNUNCE payload");
+                WriteLog("Publishing to topic " + SubscribeTopic + " the ANNUNCE payload", LogLevel.Debug);
                 MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(BuildAnnounce()) });
             }
             else
@@ -31,7 +30,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 {
                     if (GetStep.SeqID != null)
                     {
-                        WriteLog("Decoding message with sequence " + int.Parse(GetStep.SeqID.ToString()));
+                        WriteLog("Decoding message with sequence " + int.Parse(GetStep.SeqID.ToString()), LogLevel.Debug);
                         switch (int.Parse(GetStep.SeqID.ToString()))
                         {
                             case 1:
@@ -51,13 +50,10 @@ namespace MQTT_NET_COMELIT.Comelit
                             case 3:
                                 Header ROOT = JsonConvert.DeserializeObject<Header>(payload);
                                 MQTTLoggedIn = ROOT != null;
-                                if (HomeStructure == null)
-                                {
-                                    WriteLog("Create structure and subscribe to value change event");
-                                    CreateStructure(ROOT);
-                                    SubscribeToDeviceValueChange();
-                                    if (MQTTLoggedIn) WriteLog("Comelit devices list updated!");
-                                }
+                                WriteLog("Create/update structure and subscribe to value change event");
+                                CreateStructure(ROOT);
+                                SubscribeToDeviceValueChange();
+                                if (MQTTLoggedIn) WriteLog("Comelit devices list updated!");
                                 foreach (Area a in HomeStructure.Areas)
                                 {
                                     foreach (Device dev in a.Devices)
@@ -74,13 +70,13 @@ namespace MQTT_NET_COMELIT.Comelit
                                 break;
 
                             default:
-                                WriteLog($"Communication sequence step {int.Parse(GetStep.SeqID.ToString())} not implemented yet! Message: {payload}");
+                                WriteLog($"Communication sequence step {int.Parse(GetStep.SeqID.ToString())} not implemented yet! Message: {payload}", LogLevel.Warning);
                                 break;
                         }
                     }
                 }
             }
-            WriteLog($"Login sequence END - Result: {MQTTLoggedIn}");
+            WriteLog($"Login sequence END - Result: {MQTTLoggedIn}", LogLevel.Debug);
         }
     }
 }

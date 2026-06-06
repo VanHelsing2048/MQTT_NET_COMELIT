@@ -1,6 +1,6 @@
 name: "Comelit Integration"
 description: "Integrazione alla domotica Comelit"
-version: "1.0.26"
+version: "1.1.0"
 slug: "comelit-integration"
 init: false
 arch:
@@ -20,6 +20,7 @@ options:
   mosquitto-password: "raspberry"
   mosquitto-IPAddress: "192.168.1.63"
   init-device-config: false
+  log-level: "debug"
 schema:
   comelit-username: "str"
   comelit-password: "password"
@@ -31,3 +32,4 @@ schema:
   mosquitto-password: "password"
   mosquitto-IPAddress: "str"
   init-device-config: bool
+  log-level: "list(debug|info|warning|error)"

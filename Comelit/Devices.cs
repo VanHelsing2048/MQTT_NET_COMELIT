@@ -4,71 +4,223 @@ namespace MQTT_NET_COMELIT.Comelit
 {
     public static class Devices
     {
-        public static void CreateDigitalLightConfig(DevicesStructure.DigitalLight dev)
+        public static void CreateDigitalLightConfig(DigitalLight dev)
         {
             dev.CommandTopic = $"home/lights/{dev.GetIDForTopic()}/set";
             dev.StatusTopic = $"home/lights/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() { name = dev.Description, object_id = dev.ID, unique_id = dev.ID, icon = "mdi:lightbulb", command_topic = dev.CommandTopic, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Light", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:lightbulb", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [ dev.AreaName ], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Light", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/light/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
         }
-        public static void CreateDimmerLightConfig(DevicesStructure.DimmerLight dev)
+        public static void CreateDimmerLightConfig(DimmerLight dev)
         {
-            dev.CommandTopic = "";
-            dev.StatusTopic = "";
-            dev.ConfigPayload = "";
-            dev.ConfigTopic = "";
+            dev.CommandTopic = $"home/lights/{dev.GetIDForTopic()}/set";
+            dev.StatusTopic = $"home/lights/{dev.GetIDForTopic()}/state";
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:lightbulb-dimmable", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                BrightnessTopic = $"home/lights/{dev.GetIDForTopic()}/brightness/set",
+                BrightnessStateTopic = $"home/lights/{dev.GetIDForTopic()}/brightness/state",
+                BrightnessScale = "255",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Dimmer Light", SuggestedArea = dev.AreaName } 
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/light/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
         }
-        public static void CreateElectricBlindConfig(DevicesStructure.ElectricBlind dev)
+        public static void CreateElectricBlindConfig(ElectricBlind dev)
         {
             dev.CommandTopic = $"home/cover/{dev.GetIDForTopic()}/set";
             dev.StatusTopic = $"home/cover/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() {name = dev.Description, device_class = "cover", object_id=dev.ID, unique_id = dev.ID, icon ="mdi:blinds", command_topic = dev.CommandTopic, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Electric Blind", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() {
+                Name = dev.Description, 
+                DeviceClass = "cover", 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:blinds", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                PayloadOpen = "OPEN",
+                PayloadClose = "CLOSE",
+                PayloadStop = "STOP",
+                PositionTopic = $"home/cover/{dev.GetIDForTopic()}/position/state",
+                PositionOpenValue = "100",
+                PositionClosedValue = "0",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Electric Blind", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/cover/{dev.GetIDForTopic()}/config";
-            //dev.ConfigReadyToSend = true;
-            //dev.CanSubscribe = true;
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
         }
-        public static void CreateOtherDigitConfig(DevicesStructure.OtherDigit dev)
+        public static void CreateOtherDigitConfig(OtherDigit dev)
         {
             dev.CommandTopic = $"home/switch/{dev.GetIDForTopic()}/set";
             dev.StatusTopic = $"home/switch/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() { name = dev.Description, device_class = "switch", object_id = dev.ID, unique_id = dev.ID, icon = "mdi:switch", command_topic = dev.CommandTopic, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Digital Output", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                DeviceClass = "switch", 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:switch", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Digital Output", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/switch/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
         }
-        public static void CreateClimaConfig(DevicesStructure.Clima dev)
+        public static void CreateOtherTemporaryConfig(OtherTemporary dev)
         {
-            dev.CommandTopic = "";
-            dev.StatusTopic = "";
-            dev.ConfigPayload = "";
-            dev.ConfigTopic = "";
+            dev.CommandTopic = $"home/buttons/{dev.GetIDForTopic()}/press";
+            dev.ConfigPayload = new MQTTConfig() {
+                Name = dev.Description,
+                ObjectId = dev.ID,
+                UniqueId = dev.ID,
+                Icon = "mdi:gesture-tap-button",
+                CommandTopic = dev.CommandTopic,
+                PayloadPress = "PRESS",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Temporary Output", SuggestedArea = dev.AreaName }
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/button/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
         }
-        public static void CreateIrrigationValveConfig(DevicesStructure.IrrigationValve dev)
+        public static void CreateAutomationConfig(Automation dev)
+        {
+            dev.CommandTopic = $"home/buttons/{dev.GetIDForTopic()}/press";
+            dev.ConfigPayload = new MQTTConfig() {
+                Name = dev.Description,
+                ObjectId = dev.ID,
+                UniqueId = dev.ID,
+                Icon = "mdi:window-open-variant",
+                CommandTopic = dev.CommandTopic,
+                PayloadPress = "PRESS",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Automation", SuggestedArea = dev.AreaName }
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/button/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
+        }
+        public static void CreateSensorConfig(ComelitSensor dev)
+        {
+            dev.StatusTopic = $"home/sensor/{dev.GetIDForTopic()}/state";
+            dev.ConfigPayload = new MQTTConfig() {
+                Name = dev.Description,
+                ObjectId = dev.ID,
+                UniqueId = dev.ID,
+                DeviceClass = dev.DeviceClass,
+                Icon = dev.Icon,
+                StateTopic = dev.StatusTopic,
+                UnitOfMeasurement = dev.UnitOfMeasurement,
+                StateClass = dev.StateClass,
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Sensor", SuggestedArea = dev.AreaName }
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/sensor/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
+        }
+        public static void CreateClimaConfig(Clima dev)
+        {
+            dev.CommandTopic = $"home/climate/{dev.GetIDForTopic()}/set";
+            dev.StatusTopic = $"home/climate/{dev.GetIDForTopic()}/state";
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                DeviceClass = "climate", 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:thermostat", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                CurrentTemperatureTopic = $"home/climate/{dev.GetIDForTopic()}/current-temperature/state",
+                TemperatureStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/state",
+                TemperatureCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/set",
+                ModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/mode/state",
+                ActionTopic = $"home/climate/{dev.GetIDForTopic()}/action/state",
+                MinTemp = "15",
+                MaxTemp = "30",
+                TempStep = "0.5",
+                Modes = new List<string> { "off", "heat", "cool", "auto" },
+                FanModes = new List<string> { "auto", "low", "medium", "high" },
+                CurrentHumidityTopic = $"home/climate/{dev.GetIDForTopic()}/current-humidity/state",
+                TargetHumidityStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/state",
+                TargetHumidityCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/set",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Climate", SuggestedArea = dev.AreaName } 
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/climate/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
+        }
+        public static void CreateIrrigationValveConfig(IrrigationValve dev)
         {
             //configurazione come switch mdi:pipe-valve
             dev.CommandTopic = $"home/valves/{dev.GetIDForTopic()}/set";
             dev.StatusTopic = $"home/valves/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() { name = dev.Description, device_class = "switch", object_id = dev.ID, unique_id = dev.ID, icon = "mdi:pipe-valve", command_topic = dev.CommandTopic, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Valve", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                DeviceClass = "switch", 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                Icon = "mdi:pipe-valve", 
+                CommandTopic = dev.CommandTopic, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Valve", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/switch/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
         }
 
-        public static void CreateInputConfig(DevicesStructure.Input dev)
+        public static void CreateInputConfig(Input dev)
         {
             dev.StatusTopic = $"home/inputs/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() { name = dev.Description, object_id = dev.ID, unique_id = dev.ID, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Input", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Input", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/binary_sensor/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
         }
 
-        internal static void CreateAlarmConfig(DevicesStructure.Input dev)
+        internal static void CreateAlarmConfig(Input dev)
         {
             dev.StatusTopic = $"home/inputs/{dev.GetIDForTopic()}/state";
-            dev.ConfigPayload = new MQTTConfig() { name = dev.Description, object_id = dev.ID, unique_id = dev.ID, state_topic = dev.StatusTopic, device = new MQTTDevice() { identifiers = dev.AreaName, manufacturer = "Comelit", model = "Comelit", name = "Comelit Alarm", suggested_area = dev.AreaName } }.ToString();
+            dev.ConfigPayload = new MQTTConfig() { 
+                Name = dev.Description, 
+                ObjectId = dev.ID, 
+                UniqueId = dev.ID, 
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Alarm", SuggestedArea = dev.AreaName } 
+            }.ToString();
             dev.ConfigTopic = $"homeassistant/binary_sensor/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
@@ -76,7 +228,7 @@ namespace MQTT_NET_COMELIT.Comelit
     }
 }
 
-namespace MQTT_NET_COMELIT.Comelit.DevicesStructure
+namespace MQTT_NET_COMELIT.Comelit
 {
     public abstract class Device
     {
@@ -140,6 +292,15 @@ namespace MQTT_NET_COMELIT.Comelit.DevicesStructure
         {
             return ID.Replace("#", "hash").Replace(".", "dot");
         }
+
+        /// <summary>
+        /// Create a state snapshot for change detection.
+        /// Can be overridden by subclasses if custom state tracking is needed.
+        /// </summary>
+        public virtual DeviceStateManager.DeviceStateSnapshot GetStateSnapshot()
+        {
+            return DeviceStateManager.DeviceStateSnapshot.FromDevice(this);
+        }
     }
 
     public class DigitalLight : Device { }
@@ -171,6 +332,28 @@ namespace MQTT_NET_COMELIT.Comelit.DevicesStructure
     }
 
     public class OtherDigit : Device { }
+
+    public class OtherTemporary : Device { }
+
+    public class Automation : Device { }
+
+    public class ComelitSensor : Device
+    {
+        [Newtonsoft.Json.JsonProperty("instant_power")]
+        public string InstantPower { get; set; }
+        [Newtonsoft.Json.JsonProperty("label_value")]
+        public string LabelValue { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
+        public string UnitOfMeasurement { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
+        public string DeviceClass { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
+        public string StateClass { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
+        public string Icon { get; set; }
+
+        public string SensorValue => !string.IsNullOrWhiteSpace(InstantPower) ? InstantPower : Status;
+    }
 
     public class Input : Device { }
 

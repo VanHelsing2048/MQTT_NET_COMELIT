@@ -1,5 +1,5 @@
-﻿using static MQTT_NET_COMELIT.Comelit.JsonParsing;
-using MQTT_NET_COMELIT.Comelit.DevicesStructure;
+using static MQTT_NET_COMELIT.Comelit.JsonParsing;
+using static MQTT_NET_COMELIT.Utility.Utility;
 
 namespace MQTT_NET_COMELIT.Comelit
 {
@@ -7,9 +7,20 @@ namespace MQTT_NET_COMELIT.Comelit
     {
         public Home HomeStructure { get; private set; }
 
+        private static readonly Dictionary<string, string> AreaNameAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Bagno Primo piano"] = "Bagno PP"
+        };
+
         private void CreateStructure(Header root)
         {
-            var casa = root.OutData[0].Elements[0].Data;
+            ElementData casa = root?.OutData?.FirstOrDefault()?.Elements?.FirstOrDefault()?.Data;
+            if (casa == null)
+            {
+                WriteLog("Unable to create Comelit structure: root home element not found", LogLevel.Error);
+                return;
+            }
+
             HomeStructure = new Home()
             {
                 ID = casa.ID,
@@ -17,98 +28,216 @@ namespace MQTT_NET_COMELIT.Comelit
                 Name = casa.Description,
                 Type = casa.Type,
                 SubType = casa.SubType,
-                Areas = new List<Area>()
+                Areas = []
             };
-            for (int i = 0; i <= casa.Elements.Count - 1; i++)
+
+            Dictionary<string, Area> areaById = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, Area> areaByName = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (Element element in casa.Elements ?? [])
             {
-                if (i < 2) // I primi due elementi sono i piani della casa con le stanze
+                ElementData data = element.Data;
+                if (data == null)
                 {
-                    var floor = casa.Elements[i].Data;
-                    for (int ii = 0; ii < floor.Elements.Count; ii++)
-                    {
-                        var element = floor.Elements[ii].Data;
-                        HomeStructure.Areas.Add(new Area()
-                        {
-                            ID = element.ID,
-                            Description = element.Description,
-                            Name = element.Description,
-                            Type = element.Type,
-                            SubType = element.SubType,
-                            Devices = new List<Device>()
-                        });
-
-                        for (int iii = 0; iii < element.Elements.Count; iii++)
-                        {
-                            var elData = element.Elements[iii].Data;
-                            HomeStructure.Areas.Last().Devices.Add(CreateDeviceBinding(elData, element.Description));
-                        }
-                    }
+                    continue;
                 }
-                else //I rimanenti sono i sensori Temp/Umid
+
+                if (IsZone(data))
                 {
-                    var clima = casa.Elements[i].Data;
-                    Area area = HomeStructure.Areas.FirstOrDefault(x => x.Description == clima.Description);
-                    if (area != null)
-                    {
-                        area.Devices.Add(CreateDeviceBinding(clima, clima.Description));
-                    }
-                    else
-                    {
-                        if (clima.Description == "Bagno Primo piano")
-                        {
-                            area = HomeStructure.Areas.FirstOrDefault(x => x.Description == "Bagno PP");
-                            area.Devices.Add(CreateDeviceBinding(clima, clima.Description));
-                        }
-                        else { Utility.Utility.WriteLog($"Unable to match area name {clima.Description}"); }
-
-                    }
-
+                    AddAreasFromZone(data, areaById, areaByName);
+                }
+                else
+                {
+                    AddTopLevelDevice(data, areaById, areaByName);
                 }
             }
 
-            //Leggo ingressi
-            for (int ing = 1; ing <= root.OutData[0].Elements.Count - 1; ing++)
+            LogStructureDiagnostics();
+        }
+
+        private void AddAreasFromZone(ElementData zone, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            List<ElementData> children = (zone.Elements ?? [])
+                .Where(element => element.Data != null)
+                .Select(element => element.Data)
+                .ToList();
+
+            List<ElementData> childZones = children.Where(IsZone).ToList();
+            List<ElementData> devices = children.Where(child => !IsZone(child)).ToList();
+
+            if (devices.Count > 0)
             {
-                var ingresso = root.OutData[0].Elements[ing];
-                if (ingresso != null && ingresso.Data.Type == Enums.OBJECT_TYPE.INPUT)
+                Area area = GetOrCreateArea(zone, areaById, areaByName);
+                foreach (ElementData device in devices)
                 {
-                    Area ingressi = HomeStructure.Areas.Find(a => a.Description == "Ingressi");
-                    if (ingressi == null)
-                    {
-                        HomeStructure.Areas.Add(new Area()
-                        {
-                            ID = "DOM#IN",
-                            Description = "Ingressi",
-                            Name = "Ingressi",
-                            Type = ingresso.Data.Type,
-                            SubType = ingresso.Data.SubType,
-                            Devices = new List<Device>()
-                        });
-                        ingressi = HomeStructure.Areas.Last();
-                    }
-                    ingressi.Devices.Add(CreateDeviceBinding(ingresso.Data, ingressi.Description));
+                    AddDeviceToArea(area, device);
                 }
-                else if (ingresso != null && ingresso.Data.Type == Enums.OBJECT_TYPE.RULE)
+            }
+
+            foreach (ElementData childZone in childZones)
+            {
+                AddAreasFromZone(childZone, areaById, areaByName);
+            }
+        }
+
+        private void AddTopLevelDevice(ElementData device, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            Area area = FindAreaForDevice(device, areaById, areaByName);
+
+            if (area == null)
+            {
+                if (device.Type == Enums.OBJECT_TYPE.INPUT)
                 {
-                    if (ingresso.Data.RuleAtoms?.Count > 0 && ingresso.Data.RuleAtoms.First().ObjID.StartsWith("ALM"))
-                    { //E' un elemento allarme
-                        Area allarme = HomeStructure.Areas.Find(a => a.Description == "Allarme");
-                        if (allarme == null)
-                        {
-                            HomeStructure.Areas.Add(new Area()
-                            {
-                                ID = "DOM#ALM",
-                                Description = "Allarme",
-                                Name = "Allarme",
-                                Type = ingresso.Data.Type,
-                                SubType = ingresso.Data.SubType,
-                                Devices = new List<Device>()
-                            });
-                            allarme = HomeStructure.Areas.Last();
-                        }
-                        allarme.Devices.Add(CreateDeviceBinding(ingresso.Data, allarme.Description));
-                    }
+                    area = GetOrCreateSyntheticArea("DOM#IN", "Ingressi", device.Type, device.SubType, areaById, areaByName);
                 }
+                else if (device.Type == Enums.OBJECT_TYPE.RULE && device.RuleAtoms?.FirstOrDefault()?.ObjID?.StartsWith("ALM") == true)
+                {
+                    area = GetOrCreateSyntheticArea("DOM#ALM", "Allarme", device.Type, device.SubType, areaById, areaByName);
+                }
+                else if (IsSystemSensor(device))
+                {
+                    area = GetOrCreateSyntheticArea("DOM#SYS", "Sistema", device.Type, device.SubType, areaById, areaByName);
+                }
+            }
+
+            if (area == null)
+            {
+                WriteUnsupportedDevice(device, "No matching area");
+                return;
+            }
+
+            AddDeviceToArea(area, device);
+        }
+
+        private Area FindAreaForDevice(ElementData device, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            if (!string.IsNullOrWhiteSpace(device.PlaceID)
+                && !string.Equals(device.PlaceID, HomeStructure.ID, StringComparison.OrdinalIgnoreCase)
+                && areaById.TryGetValue(device.PlaceID, out Area areaByIdMatch))
+            {
+                return areaByIdMatch;
+            }
+
+            string description = device.Description ?? string.Empty;
+            if (AreaNameAliases.TryGetValue(description, out string alias))
+            {
+                description = alias;
+            }
+
+            areaByName.TryGetValue(NormalizeAreaName(description), out Area areaByNameMatch);
+            return areaByNameMatch;
+        }
+
+        private Area GetOrCreateArea(ElementData zone, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            if (!string.IsNullOrWhiteSpace(zone.ID) && areaById.TryGetValue(zone.ID, out Area existingById))
+            {
+                return existingById;
+            }
+
+            Area area = new()
+            {
+                ID = zone.ID,
+                Description = zone.Description,
+                Name = zone.Description,
+                Type = zone.Type,
+                SubType = zone.SubType,
+                Devices = []
+            };
+
+            HomeStructure.Areas.Add(area);
+            IndexArea(area, areaById, areaByName);
+            return area;
+        }
+
+        private Area GetOrCreateSyntheticArea(
+            string id,
+            string description,
+            Enums.OBJECT_TYPE type,
+            Enums.OBJECT_SUBTYPE subType,
+            Dictionary<string, Area> areaById,
+            Dictionary<string, Area> areaByName)
+        {
+            if (areaById.TryGetValue(id, out Area existing))
+            {
+                return existing;
+            }
+
+            Area area = new()
+            {
+                ID = id,
+                Description = description,
+                Name = description,
+                Type = type,
+                SubType = subType,
+                Devices = []
+            };
+
+            HomeStructure.Areas.Add(area);
+            IndexArea(area, areaById, areaByName);
+            return area;
+        }
+
+        private void AddDeviceToArea(Area area, ElementData deviceData)
+        {
+            Device device = CreateDeviceBinding(deviceData, area.Description);
+            if (device == null)
+            {
+                WriteUnsupportedDevice(deviceData, $"Area '{area.Description}'");
+                return;
+            }
+
+            area.Devices.Add(device);
+        }
+
+        private static void IndexArea(Area area, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            if (!string.IsNullOrWhiteSpace(area.ID))
+            {
+                areaById[area.ID] = area;
+            }
+
+            if (!string.IsNullOrWhiteSpace(area.Description))
+            {
+                areaByName[NormalizeAreaName(area.Description)] = area;
+            }
+        }
+
+        private static bool IsZone(ElementData data)
+        {
+            return data.Type == Enums.OBJECT_TYPE.ZONE;
+        }
+
+        private static bool IsSystemSensor(ElementData data)
+        {
+            return data.Type == Enums.OBJECT_TYPE.POWER_SUPPLIER
+                || data.Type == Enums.OBJECT_TYPE.OUTLET;
+        }
+
+        private static string NormalizeAreaName(string value)
+        {
+            return string.Join(' ', (value ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+        }
+
+        private static void WriteUnsupportedDevice(ElementData device, string context)
+        {
+            WriteLog($"Unsupported Comelit device ({context}): id={device.ID}, type={(int)device.Type}/{device.Type}, sub_type={(int)device.SubType}/{device.SubType}, description='{device.Description}'", LogLevel.Warning);
+        }
+
+        private void LogStructureDiagnostics()
+        {
+            int deviceCount = HomeStructure.Areas.Sum(area => area.Devices?.Count ?? 0);
+            WriteLog($"Comelit structure summary: {HomeStructure.Areas.Count} areas, {deviceCount} devices");
+
+            foreach (Area area in HomeStructure.Areas.OrderBy(area => area.Description))
+            {
+                List<Device> devices = area.Devices ?? [];
+                string details = string.Join(", ", devices
+                    .GroupBy(device => $"{device.Type}/{device.SubType}")
+                    .OrderBy(group => group.Key)
+                    .Select(group => $"{group.Key}:{group.Count()}"));
+
+                WriteLog($"Comelit area '{area.Description}' ({area.ID}): {devices.Count} devices" + (string.IsNullOrEmpty(details) ? string.Empty : $" [{details}]"), LogLevel.Debug);
             }
         }
     }

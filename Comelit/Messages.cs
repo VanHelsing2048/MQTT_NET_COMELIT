@@ -49,7 +49,7 @@ namespace MQTT_NET_COMELIT.Comelit
         [JsonProperty("act_type")] public ACTION_TYPE ActType { get; set; } = ACTION_TYPE.SET;
         [JsonProperty("sessiontoken")] public string SessionToken { get; set; } = string.Empty;
         [JsonProperty("obj_id")] public string ObjId { get; set; } = string.Empty;
-        [JsonProperty("act_params")] public string[] ActParams { get; set; } = Array.Empty<string>();
+        [JsonProperty("act_params")] public string[] ActParams { get; set; } = [];
     }
 
     internal static class ComelitMessages
@@ -75,7 +75,37 @@ namespace MQTT_NET_COMELIT.Comelit
 
         public static string BuildOnOffCommand(string token, string objId, string toggle)
         {
-            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = new[] { toggle } });
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [toggle] });
+        }
+
+        public static string BuildDimmerCommand(string token, string objId, int brightness)
+        {
+            // Brightness command with value 0-255
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [brightness.ToString()] });
+        }
+
+        public static string BuildBlindCommand(string token, string objId, string command)
+        {
+            // Blind command: "OPEN", "CLOSE", "STOP"
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [command] });
+        }
+
+        public static string BuildBlindPositionCommand(string token, string objId, int position)
+        {
+            // Blind position command 0-100%
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [position.ToString()] });
+        }
+
+        public static string BuildClimaTemperatureCommand(string token, string objId, double temperature)
+        {
+            // Climate temperature command 15-30°C
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.CLIMA_SET_POINT, ActParams = [Utility.Utility.ToComelitTemperatureValue(temperature)] });
+        }
+
+        public static string BuildClimaHumidityCommand(string token, string objId, int humidity)
+        {
+            // Climate humidity command 30-80%
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.UMI_SETPOINT, ActParams = [humidity.ToString()] });
         }
     }
 }

@@ -3,7 +3,6 @@ using MQTT_NET_COMELIT.HomeAssistant;
 using Newtonsoft.Json;
 using static MQTT_NET_COMELIT.Static.ConfigData;
 using static MQTT_NET_COMELIT.Utility.Utility;
-using MQTT_NET_COMELIT.Comelit.DevicesStructure;
 
 internal class Program
 {
@@ -23,13 +22,27 @@ internal class Program
             }
             else
             {
+                SetLogLevel(Config.LogLevel);
+                WriteLog("Initializing AddOn version 1.0.29");
                 WriteLog("Starting Comelit MQTT");
                 MQTTComelit = new MQTTComelit(Config.ComelitUsername, Config.ComelitPassword, Config.ComelitHUBMAC, Config.ComelitHUBIP, Config.ComelitHUBROOTElement, Config.PollingTime);
-                while (!MQTTComelit.ConnectedAndLoggedIn) { WriteLog("Waiting for Comelit..."); await Task.Delay(1000); }
+                int comelitWaitSeconds = 0;
+                while (!MQTTComelit.ConnectedAndLoggedIn)
+                {
+                    if (comelitWaitSeconds % 10 == 0) WriteLog("Waiting for Comelit...");
+                    comelitWaitSeconds++;
+                    await Task.Delay(1000);
+                }
 
                 WriteLog("Starting HA MQTT");
                 MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
-                while (!MQTTHomeAssistant.ConnectedAndLoggedIn) { WriteLog("Waiting for HA..."); await Task.Delay(1000); }
+                int homeAssistantWaitSeconds = 0;
+                while (!MQTTHomeAssistant.ConnectedAndLoggedIn)
+                {
+                    if (homeAssistantWaitSeconds % 10 == 0) WriteLog("Waiting for HA...");
+                    homeAssistantWaitSeconds++;
+                    await Task.Delay(1000);
+                }
 
                 MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
 
@@ -52,24 +65,82 @@ internal class Program
                     File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(Config));
                 }
 
+                // Publish initial state for all known devices to Home Assistant
                 foreach (Area area in MQTTComelit.HomeStructure.Areas)
                 {
                     foreach (Device dev in area.Devices)
                     {
-                        if (dev?.SubType == Enums.OBJECT_SUBTYPE.DIGITAL_LIGHT || 
-                            dev?.Type == Enums.OBJECT_TYPE.IRRIGATION || 
-                            dev?.Type == Enums.OBJECT_TYPE.INPUT ||
-                            dev?.SubType == Enums.OBJECT_SUBTYPE.OTHER_DIGIT || 
-                            dev?.Type == Enums.OBJECT_TYPE.RULE)
+                        if (dev == null) continue;
+
+                        if (dev is ComelitSensor sensor)
                         {
-                            MQTTHomeAssistant.Publish(dev.StatusTopic, $"{dev.StatusONOFF}");
-                            await Task.Delay(50);
+                            MQTTHomeAssistant.Publish(sensor.StatusTopic, sensor.SensorValue);
+                            await Task.Delay(25);
+                            continue;
+                        }
+
+                        // Publish generic ON/OFF status if available
+                        if (!string.IsNullOrEmpty(dev.StatusTopic))
+                        {
+                            MQTTHomeAssistant.Publish(dev.StatusTopic, dev.StatusONOFF);
+                            await Task.Delay(25);
+                        }
+
+                        // Device-specific initial state publishes
+                        switch (dev.SubType)
+                        {
+                            case Enums.OBJECT_SUBTYPE.DIMMER_LIGHT:
+                                if (dev is DimmerLight dimmer)
+                                {
+                                    string bright = !string.IsNullOrEmpty(dimmer.Bright) ? dimmer.Bright : "0";
+                                    MQTTHomeAssistant.Publish($"home/lights/{dev.GetIDForTopic()}/brightness/state", bright);
+                                    await Task.Delay(25);
+                                }
+                                break;
+                            case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
+                            case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
+                                if (dev is ElectricBlind blind)
+                                {
+                                    string pos = !string.IsNullOrEmpty(blind.OpenStatus) ? blind.OpenStatus : "0";
+                                    MQTTHomeAssistant.Publish($"home/cover/{dev.GetIDForTopic()}/position/state", pos);
+                                    await Task.Delay(25);
+                                }
+                                break;
+                            case Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER:
+                                if (dev is Clima clima)
+                                {
+                                    if (!string.IsNullOrEmpty(clima.Temperatura))
+                                    {
+                                        MQTTHomeAssistant.Publish($"home/climate/{dev.GetIDForTopic()}/current-temperature/state", NormalizeComelitTemperature(clima.Temperatura));
+                                        await Task.Delay(25);
+                                    }
+                                    if (!string.IsNullOrEmpty(clima.Umidita))
+                                    {
+                                        MQTTHomeAssistant.Publish($"home/climate/{dev.GetIDForTopic()}/current-humidity/state", clima.Umidita);
+                                        await Task.Delay(25);
+                                    }
+                                    MQTTComelit.PublishClimateState(clima);
+                                    await Task.Delay(25);
+                                }
+                                break;
                         }
                     }
                 }
+
                 if (MQTTComelit.PollingDevice != null) MQTTComelit.StartPolling();
                 WriteLog("Ready");
-                while (MQTTComelit.ConnectedAndLoggedIn && MQTTHomeAssistant.ConnectedAndLoggedIn) { await Task.Delay(1000); }
+                bool lastReadyState = true;
+                while (true)
+                {
+                    bool readyState = MQTTComelit.ConnectedAndLoggedIn && MQTTHomeAssistant.ConnectedAndLoggedIn;
+                    if (readyState != lastReadyState)
+                    {
+                        WriteLog(readyState ? "Connection restored" : "Connection lost, waiting for reconnect...");
+                        lastReadyState = readyState;
+                    }
+
+                    await Task.Delay(1000);
+                }
             }
         }
         else

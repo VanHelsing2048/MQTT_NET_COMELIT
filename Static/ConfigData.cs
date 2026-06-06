@@ -24,6 +24,8 @@
             public string HomeAssistantIP { get; set; }
             [Newtonsoft.Json.JsonProperty("init-device-config")]
             public bool InitializeDevicesConfiguration { get; set; }
+            [Newtonsoft.Json.JsonProperty("log-level")]
+            public string LogLevel { get; set; } = "debug";
         }
     }
 }
