@@ -27,6 +27,15 @@ namespace MQTT_NET_COMELIT.HomeAssistant
             MQTTPassword = password;
             MQTTIPAddress = ip;
             MQTTComelit = mQTTComelit;
+        }
+
+        public void Start()
+        {
+            if (MQTTTask != null)
+            {
+                return;
+            }
+
             MQTTTask = StartMQTT();
             _ = MQTTTask.ContinueWith(task => WriteLog($"HomeAssistant MQTT task failed: {task.Exception?.GetBaseException().Message}"), TaskContinuationOptions.OnlyOnFaulted);
         }
@@ -113,7 +122,19 @@ namespace MQTT_NET_COMELIT.HomeAssistant
         {
             WriteLog("The HomeAssistant MQTT client is connected.");
 
-            // Populate device cache
+            ConnectedAndLoggedIn = true;
+            RefreshDeviceSubscriptions();
+            return Task.CompletedTask;
+        }
+
+        public void RefreshDeviceSubscriptions()
+        {
+            if (!ConnectedAndLoggedIn || MQTTComelit?.HomeStructure?.Areas == null)
+            {
+                WriteLog("HomeAssistant MQTT device subscriptions postponed: Comelit structure is not ready", LogLevel.Debug);
+                return;
+            }
+
             _deviceCache.Clear();
             foreach (Area area in MQTTComelit.HomeStructure.Areas)
             {
@@ -128,9 +149,6 @@ namespace MQTT_NET_COMELIT.HomeAssistant
 
             // Subscribe to device-specific topics
             SubscribeToDeviceTopics();
-
-            ConnectedAndLoggedIn = true;
-            return Task.CompletedTask;
         }
 
         private void SubscribeToDeviceTopics()
@@ -248,6 +266,12 @@ namespace MQTT_NET_COMELIT.HomeAssistant
 
         public void Publish(string topic, string payload, bool retain = false)
         {
+            if (!ConnectedAndLoggedIn || MQTTClient?.IsConnected != true)
+            {
+                WriteLog($"HomeAssistant publish skipped because MQTT is not connected: {topic}", LogLevel.Warning);
+                return;
+            }
+
             if (ShouldNormalizeBinaryPayload(topic))
             {
                 if (payload == "1") payload = "ON";

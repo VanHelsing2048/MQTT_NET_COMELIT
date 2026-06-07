@@ -123,10 +123,14 @@ namespace MQTT_NET_COMELIT.Comelit
             [Newtonsoft.Json.JsonProperty("status")]
             public string Status { get; set; }
             [Newtonsoft.Json.JsonProperty("powerst")]
-            public DEVICE_STATUS PowerSt { get; set; }
+            public string PowerSt { get; set; }
+            [Newtonsoft.Json.JsonProperty("bright")]
             public string Bright { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("open_status")]
             public string OpenStatus { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("temperatura")]
             public string Temperatura { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("umidita")]
             public string Umidita { get; internal set; }
             [Newtonsoft.Json.JsonProperty("soglia_attiva")]
             public string SogliaAttiva { get; internal set; }
@@ -138,6 +142,8 @@ namespace MQTT_NET_COMELIT.Comelit
             public string AutoMan { get; internal set; }
             [Newtonsoft.Json.JsonProperty("auto_man_umi")]
             public string AutoManUmi { get; internal set; }
+            [Newtonsoft.Json.JsonProperty("semiauto_enabled")]
+            public string SemiautoEnabled { get; internal set; }
             [Newtonsoft.Json.JsonProperty("instant_power")]
             public string InstantPower { get; internal set; }
             [Newtonsoft.Json.JsonProperty("label_value")]
@@ -532,7 +538,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
         public string GetIDForTopic()
         {
-            return ID.Replace("#", "hash").Replace(".", "dot");
+            return MQTT_NET_COMELIT.Utility.Utility.NormalizeComelitId(ID);
         }
     }
 
@@ -575,6 +581,8 @@ namespace MQTT_NET_COMELIT.Comelit
         public string ModeStateTopic { get; set; }
         public string ModeCommandTopic { get; set; }
         public string ActionTopic { get; set; }
+        public string PresetModeStateTopic { get; set; }
+        public List<string> PresetModes { get; set; }
         public string MinTemp { get; set; }
         public string MaxTemp { get; set; }
         public string TempStep { get; set; }
@@ -609,8 +617,8 @@ namespace MQTT_NET_COMELIT.Comelit
             Dictionary<string, object> obj = new()
             {
                 ["name"] = Name,
-                ["object_id"] = ObjectId,
-                ["unique_id"] = UniqueId,
+                ["object_id"] = MQTT_NET_COMELIT.Utility.Utility.NormalizeComelitId(ObjectId),
+                ["unique_id"] = MQTT_NET_COMELIT.Utility.Utility.NormalizeComelitId(UniqueId),
                 ["state_topic"] = StateTopic,
                 ["unit_of_measurement"] = string.IsNullOrEmpty(UnitOfMeasurement) ? null : UnitOfMeasurement,
                 ["state_class"] = string.IsNullOrEmpty(StateClass) ? null : StateClass,
@@ -642,6 +650,8 @@ namespace MQTT_NET_COMELIT.Comelit
                 ["mode_state_topic"] = string.IsNullOrEmpty(ModeStateTopic) ? null : ModeStateTopic,
                 ["mode_command_topic"] = string.IsNullOrEmpty(ModeCommandTopic) ? null : ModeCommandTopic,
                 ["action_topic"] = string.IsNullOrEmpty(ActionTopic) ? null : ActionTopic,
+                ["preset_mode_state_topic"] = string.IsNullOrEmpty(PresetModeStateTopic) ? null : PresetModeStateTopic,
+                ["preset_modes"] = PresetModes?.Count > 0 ? PresetModes : null,
                 ["min_temp"] = string.IsNullOrEmpty(MinTemp) ? null : MinTemp,
                 ["max_temp"] = string.IsNullOrEmpty(MaxTemp) ? null : MaxTemp,
                 ["temp_step"] = string.IsNullOrEmpty(TempStep) ? null : TempStep,

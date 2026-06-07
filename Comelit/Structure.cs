@@ -14,7 +14,11 @@ namespace MQTT_NET_COMELIT.Comelit
 
         private void CreateStructure(Header root)
         {
-            ElementData casa = root?.OutData?.FirstOrDefault()?.Elements?.FirstOrDefault()?.Data;
+            List<Element> rootElements = root?.OutData?.FirstOrDefault()?.Elements ?? [];
+            ElementData casa = rootElements
+                .Select(element => element.Data)
+                .FirstOrDefault(data => data != null && IsZone(data));
+
             if (casa == null)
             {
                 WriteLog("Unable to create Comelit structure: root home element not found", LogLevel.Error);
@@ -36,23 +40,38 @@ namespace MQTT_NET_COMELIT.Comelit
 
             foreach (Element element in casa.Elements ?? [])
             {
+                AddStructureElement(element.Data, areaById, areaByName);
+            }
+
+            foreach (Element element in rootElements)
+            {
                 ElementData data = element.Data;
-                if (data == null)
+                if (data == null || string.Equals(data.ID, casa.ID, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                if (IsZone(data))
-                {
-                    AddAreasFromZone(data, areaById, areaByName);
-                }
-                else
-                {
-                    AddTopLevelDevice(data, areaById, areaByName);
-                }
+                AddStructureElement(data, areaById, areaByName);
             }
 
             LogStructureDiagnostics();
+        }
+
+        private void AddStructureElement(ElementData data, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            if (IsZone(data))
+            {
+                AddAreasFromZone(data, areaById, areaByName);
+            }
+            else
+            {
+                AddTopLevelDevice(data, areaById, areaByName);
+            }
         }
 
         private void AddAreasFromZone(ElementData zone, Dictionary<string, Area> areaById, Dictionary<string, Area> areaByName)
@@ -90,7 +109,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 {
                     area = GetOrCreateSyntheticArea("DOM#IN", "Ingressi", device.Type, device.SubType, areaById, areaByName);
                 }
-                else if (device.Type == Enums.OBJECT_TYPE.RULE && device.RuleAtoms?.FirstOrDefault()?.ObjID?.StartsWith("ALM") == true)
+                else if (IsAlarmRule(device))
                 {
                     area = GetOrCreateSyntheticArea("DOM#ALM", "Allarme", device.Type, device.SubType, areaById, areaByName);
                 }
@@ -212,6 +231,12 @@ namespace MQTT_NET_COMELIT.Comelit
         {
             return data.Type == Enums.OBJECT_TYPE.POWER_SUPPLIER
                 || data.Type == Enums.OBJECT_TYPE.OUTLET;
+        }
+
+        private static bool IsAlarmRule(ElementData data)
+        {
+            return data.Type == Enums.OBJECT_TYPE.RULE
+                && data.RuleAtoms?.Any(atom => atom.ObjID?.StartsWith("ALM#ZN#", StringComparison.OrdinalIgnoreCase) == true) == true;
         }
 
         private static string NormalizeAreaName(string value)

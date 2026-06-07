@@ -27,7 +27,16 @@ namespace MQTT_NET_COMELIT.Comelit
 
             SubscribeTopic = $"HSrv/{HubMACAddress}/tx/{MQTTClientID}";
             PublishTopic = $"HSrv/{HubMACAddress}/rx/{MQTTClientID}";
+        }
 
+        public void Start()
+        {
+            if (MQTTTask != null)
+            {
+                return;
+            }
+
+            WriteLog("Starting Comelit MQTT");
             MQTTTask = StartMQTT();
             _ = MQTTTask.ContinueWith(task => WriteLog($"Comelit MQTT task failed: {task.Exception?.GetBaseException().Message}"), TaskContinuationOptions.OnlyOnFaulted);
         }
@@ -80,8 +89,12 @@ namespace MQTT_NET_COMELIT.Comelit
                                     clima.EstInv = recDev.EstInv;
                                 if (!string.IsNullOrEmpty(recDev.AutoMan))
                                     clima.AutoMan = recDev.AutoMan;
+                                if (!string.IsNullOrEmpty(recDev.PowerSt))
+                                    clima.PowerSt = recDev.PowerSt;
                                 if (!string.IsNullOrEmpty(recDev.AutoManUmi))
                                     clima.AutoManUmi = recDev.AutoManUmi;
+                                if (!string.IsNullOrEmpty(recDev.SemiautoEnabled))
+                                    clima.SemiautoEnabled = recDev.SemiautoEnabled;
                             }
                             if (device is ComelitSensor sensor)
                             {
@@ -308,11 +321,17 @@ namespace MQTT_NET_COMELIT.Comelit
                     // Check if brightness is already the current value (anti-loop)
                     if (!string.IsNullOrEmpty(dimmer.Bright) && int.TryParse(dimmer.Bright, out int currentBright) && currentBright == brightness)
                     {
-                        WriteLog($"[SKIP] Device {device.ID}: Brightness already {brightness}, skipping duplicate command", LogLevel.Debug);
-                        return;
+                        bool requestedOn = brightness > 0;
+                        bool alreadyInRequestedState = requestedOn ? device.Status != "0" : device.Status == "0";
+                        if (alreadyInRequestedState)
+                        {
+                            WriteLog($"[SKIP] Device {device.ID}: Brightness already {brightness}, skipping duplicate command", LogLevel.Debug);
+                            return;
+                        }
                     }
 
                     dimmer.Bright = brightness.ToString();
+                    device.Status = brightness > 0 ? "1" : "0";
                     string newCommand = BuildDimmerCommand(SessionToken, device.ID, brightness);
 
                     // Check if this is the same command we just sent (prevent loop)
@@ -323,8 +342,10 @@ namespace MQTT_NET_COMELIT.Comelit
                     }
 
                     LastCommand = newCommand;
-                    WriteLog($"Comelit DimmerLight Brightness: {brightness} -> Publishing to Comelit");
+                    WriteLog($"Comelit DimmerLight Brightness: status={device.Status}, brightness={brightness} -> Publishing to Comelit");
                     MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(LastCommand) });
+                    MQTTHomeAssistant?.Publish($"home/lights/{device.GetIDForTopic()}/brightness/state", brightness.ToString());
+                    MQTTHomeAssistant?.Publish(device.StatusTopic, brightness > 0 ? "ON" : "OFF");
                 }
                 else
                 {
@@ -535,16 +556,65 @@ namespace MQTT_NET_COMELIT.Comelit
             }
 
             MQTTHomeAssistant.Publish($"home/climate/{id}/mode/state", GetClimateMode(clima));
+            MQTTHomeAssistant.Publish($"home/climate/{id}/action/state", GetClimateAction(clima));
+            MQTTHomeAssistant.Publish($"home/climate/{id}/preset-mode/state", GetClimatePresetMode(clima));
         }
 
         private static string GetClimateMode(Clima clima)
         {
+            if (IsClimateOff(clima))
+            {
+                return "off";
+            }
+
             return clima.EstInv switch
             {
                 "0" => "heat",
                 "1" => "cool",
-                _ => "auto"
+                _ => "heat"
             };
+        }
+
+        private static string GetClimateAction(Clima clima)
+        {
+            if (IsClimateOff(clima))
+            {
+                return "off";
+            }
+
+            if (clima.Status == "16")
+            {
+                return clima.EstInv == "1" ? "cooling" : "heating";
+            }
+
+            return "idle";
+        }
+
+        private static string GetClimatePresetMode(Clima clima)
+        {
+            if (IsClimateOff(clima))
+            {
+                return "off";
+            }
+
+            if (clima.SemiautoEnabled == "1")
+            {
+                return "semiauto";
+            }
+
+            return clima.AutoMan switch
+            {
+                "0" => "auto",
+                "1" => "auto",
+                "2" => "manual",
+                "6" => "off",
+                _ => "manual"
+            };
+        }
+
+        private static bool IsClimateOff(Clima clima)
+        {
+            return clima.PowerSt == "0" || clima.AutoMan == "6";
         }
 
         private Device CreateDeviceBinding(ElementData elData, string area = "")
@@ -578,7 +648,10 @@ namespace MQTT_NET_COMELIT.Comelit
                     output = CreateInputBinding(elData, area);
                     break;
                 case Enums.OBJECT_TYPE.RULE:
-                    output = CreateAlarmBinding(elData, area);
+                    if (IsAlarmRule(elData))
+                    {
+                        output = CreateAlarmBinding(elData, area);
+                    }
                     break;
             }
             return output;

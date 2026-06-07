@@ -80,8 +80,8 @@ namespace MQTT_NET_COMELIT.Comelit
 
         public static string BuildDimmerCommand(string token, string objId, int brightness)
         {
-            // Brightness command with value 0-255
-            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [brightness.ToString()] });
+            string status = brightness > 0 ? "1" : "0";
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActParams = [status, brightness.ToString()] });
         }
 
         public static string BuildBlindCommand(string token, string objId, string command)

@@ -22,6 +22,9 @@ namespace MQTT_NET_COMELIT.Comelit
             public string Position { get; set; } // For blinds (0-100)
             public string Temperature { get; set; } // For clima
             public string Humidity { get; set; } // For clima
+            public string PowerSt { get; set; } // For clima mode
+            public string EstInv { get; set; } // For clima heat/cool
+            public string AutoMan { get; set; } // For clima preset
             public DateTime LastUpdate { get; set; }
 
             /// <summary>
@@ -47,6 +50,9 @@ namespace MQTT_NET_COMELIT.Comelit
                 {
                     snapshot.Temperature = clima.Temperatura;
                     snapshot.Humidity = clima.Umidita;
+                    snapshot.PowerSt = clima.PowerSt;
+                    snapshot.EstInv = clima.EstInv;
+                    snapshot.AutoMan = clima.AutoMan;
                 }
 
                 return snapshot;
@@ -78,6 +84,12 @@ namespace MQTT_NET_COMELIT.Comelit
                     if (!AreTemperaturesEqual(Temperature, clima.Temperatura))
                         return true;
                     if (!AreHumiditiesEqual(Humidity, clima.Umidita))
+                        return true;
+                    if (PowerSt != clima.PowerSt)
+                        return true;
+                    if (EstInv != clima.EstInv)
+                        return true;
+                    if (AutoMan != clima.AutoMan)
                         return true;
                 }
 
@@ -148,6 +160,12 @@ namespace MQTT_NET_COMELIT.Comelit
                         WriteLog($"[TRANSITION] Device {deviceId}: Temperature {prevSnapshot.Temperature}°C -> {newSnapshot.Temperature}°C");
                     if (prevSnapshot.Humidity != newSnapshot.Humidity)
                         WriteLog($"[TRANSITION] Device {deviceId}: Humidity {prevSnapshot.Humidity}% -> {newSnapshot.Humidity}%", LogLevel.Debug);
+                    if (prevSnapshot.PowerSt != newSnapshot.PowerSt)
+                        WriteLog($"[TRANSITION] Device {deviceId}: PowerSt {prevSnapshot.PowerSt} -> {newSnapshot.PowerSt}", LogLevel.Debug);
+                    if (prevSnapshot.EstInv != newSnapshot.EstInv)
+                        WriteLog($"[TRANSITION] Device {deviceId}: EstInv {prevSnapshot.EstInv} -> {newSnapshot.EstInv}", LogLevel.Debug);
+                    if (prevSnapshot.AutoMan != newSnapshot.AutoMan)
+                        WriteLog($"[TRANSITION] Device {deviceId}: AutoMan {prevSnapshot.AutoMan} -> {newSnapshot.AutoMan}", LogLevel.Debug);
                 }
 
                 _stateSnapshots[deviceId] = newSnapshot;

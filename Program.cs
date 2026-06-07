@@ -23,19 +23,13 @@ internal class Program
             else
             {
                 SetLogLevel(Config.LogLevel);
-                WriteLog("Initializing AddOn version 1.0.29");
-                WriteLog("Starting Comelit MQTT");
+                WriteLog("Initializing AddOn version 1.1.2");
                 MQTTComelit = new MQTTComelit(Config.ComelitUsername, Config.ComelitPassword, Config.ComelitHUBMAC, Config.ComelitHUBIP, Config.ComelitHUBROOTElement, Config.PollingTime);
-                int comelitWaitSeconds = 0;
-                while (!MQTTComelit.ConnectedAndLoggedIn)
-                {
-                    if (comelitWaitSeconds % 10 == 0) WriteLog("Waiting for Comelit...");
-                    comelitWaitSeconds++;
-                    await Task.Delay(1000);
-                }
+                MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
+                MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
 
                 WriteLog("Starting HA MQTT");
-                MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
+                MQTTHomeAssistant.Start();
                 int homeAssistantWaitSeconds = 0;
                 while (!MQTTHomeAssistant.ConnectedAndLoggedIn)
                 {
@@ -44,7 +38,15 @@ internal class Program
                     await Task.Delay(1000);
                 }
 
-                MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
+                WriteLog("Starting Comelit MQTT");
+                MQTTComelit.Start();
+                int comelitWaitSeconds = 0;
+                while (!MQTTComelit.ConnectedAndLoggedIn)
+                {
+                    if (comelitWaitSeconds % 10 == 0) WriteLog("Waiting for Comelit...");
+                    comelitWaitSeconds++;
+                    await Task.Delay(1000);
+                }
 
                 //Invio configurazione luci ad HA per MQTT Discovery + aggiornamento immediato dello stato
                 if (Config.InitializeDevicesConfiguration)

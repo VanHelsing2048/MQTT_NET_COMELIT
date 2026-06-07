@@ -49,24 +49,28 @@ namespace MQTT_NET_COMELIT.Comelit
 
                             case 3:
                                 Header ROOT = JsonConvert.DeserializeObject<Header>(payload);
-                                MQTTLoggedIn = ROOT != null;
                                 WriteLog("Create/update structure and subscribe to value change event");
                                 CreateStructure(ROOT);
-                                SubscribeToDeviceValueChange();
-                                if (MQTTLoggedIn) WriteLog("Comelit devices list updated!");
-                                foreach (Area a in HomeStructure.Areas)
+                                MQTTLoggedIn = HomeStructure?.Areas != null;
+                                if (MQTTLoggedIn)
                                 {
-                                    foreach (Device dev in a.Devices)
+                                    SubscribeToDeviceValueChange();
+                                    MQTTHomeAssistant?.RefreshDeviceSubscriptions();
+                                    WriteLog("Comelit devices list updated!");
+                                    foreach (Area a in HomeStructure.Areas)
                                     {
-                                        if (dev.GetType() == typeof(DigitalLight))
+                                        foreach (Device dev in a.Devices)
                                         {
-                                            dev.IsPollingDevice = true;
-                                            PollingDevice = (DigitalLight)dev;
+                                            if (dev.GetType() == typeof(DigitalLight))
+                                            {
+                                                dev.IsPollingDevice = true;
+                                                PollingDevice = (DigitalLight)dev;
+                                            }
+                                            if (PollingDevice != null) break;
                                         }
                                         if (PollingDevice != null) break;
                                     }
-                                    if (PollingDevice != null) break;
-                                }                                
+                                }
                                 break;
 
                             default:

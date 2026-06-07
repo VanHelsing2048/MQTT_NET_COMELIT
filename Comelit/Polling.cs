@@ -22,7 +22,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 pollingDevice = value;
                 if (pollingDevice != null)
                 {
-                    PollingConfigPayload = new MQTTConfig() { Name = "Comelit Integration Service", ObjectId = pollingDevice.ID, OffDelay = (int)(_pollingMs / 1000 * 1.5), UniqueId = pollingDevice.ID, StateTopic = PollingStatus, Device = new MQTTDevice() { Identifiers = ["ServiceAvailable"], Manufacturer = "Ivan", Model = "Comelit Integration", Name = "Comelit service available", SuggestedArea = "Sistema" } }.ToString();
+                    PollingConfigPayload = new MQTTConfig() { Name = "Comelit Integration Service", ObjectId = pollingDevice.GetIDForTopic(), OffDelay = (int)(_pollingMs / 1000 * 1.5), UniqueId = pollingDevice.GetIDForTopic(), StateTopic = PollingStatus, Device = new MQTTDevice() { Identifiers = ["ServiceAvailable"], Manufacturer = "Ivan", Model = "Comelit Integration", Name = "Comelit service available", SuggestedArea = "Sistema" } }.ToString();
                 }
             }
         }

@@ -58,5 +58,32 @@
         {
             return ((int)Math.Round(celsius * 10.0)).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
+
+        public static string NormalizeComelitId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            var normalized = new System.Text.StringBuilder(value.Length);
+            bool previousWasSeparator = false;
+
+            foreach (char ch in value.ToLowerInvariant())
+            {
+                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'))
+                {
+                    normalized.Append(ch);
+                    previousWasSeparator = false;
+                }
+                else if (!previousWasSeparator)
+                {
+                    normalized.Append('_');
+                    previousWasSeparator = true;
+                }
+            }
+
+            return normalized.ToString().Trim('_');
+        }
     }
 }

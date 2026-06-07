@@ -10,8 +10,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/lights/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:lightbulb", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
@@ -29,14 +29,14 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/lights/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
-                Icon = "mdi:lightbulb-dimmable", 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
+                Icon = "mdi:lightbulb", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
                 PayloadOn = "ON",
                 PayloadOff = "OFF",
-                BrightnessTopic = $"home/lights/{dev.GetIDForTopic()}/brightness/set",
+                BrightnessCommandTopic = $"home/lights/{dev.GetIDForTopic()}/brightness/set",
                 BrightnessStateTopic = $"home/lights/{dev.GetIDForTopic()}/brightness/state",
                 BrightnessScale = "255",
                 Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Dimmer Light", SuggestedArea = dev.AreaName } 
@@ -52,8 +52,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.ConfigPayload = new MQTTConfig() {
                 Name = dev.Description, 
                 DeviceClass = "cover", 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:blinds", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
@@ -76,8 +76,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
                 DeviceClass = "switch", 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:switch", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
@@ -94,8 +94,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.CommandTopic = $"home/buttons/{dev.GetIDForTopic()}/press";
             dev.ConfigPayload = new MQTTConfig() {
                 Name = dev.Description,
-                ObjectId = dev.ID,
-                UniqueId = dev.ID,
+                ObjectId = dev.GetIDForTopic(),
+                UniqueId = dev.GetIDForTopic(),
                 Icon = "mdi:gesture-tap-button",
                 CommandTopic = dev.CommandTopic,
                 PayloadPress = "PRESS",
@@ -110,8 +110,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.CommandTopic = $"home/buttons/{dev.GetIDForTopic()}/press";
             dev.ConfigPayload = new MQTTConfig() {
                 Name = dev.Description,
-                ObjectId = dev.ID,
-                UniqueId = dev.ID,
+                ObjectId = dev.GetIDForTopic(),
+                UniqueId = dev.GetIDForTopic(),
                 Icon = "mdi:window-open-variant",
                 CommandTopic = dev.CommandTopic,
                 PayloadPress = "PRESS",
@@ -126,8 +126,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/sensor/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() {
                 Name = dev.Description,
-                ObjectId = dev.ID,
-                UniqueId = dev.ID,
+                ObjectId = dev.GetIDForTopic(),
+                UniqueId = dev.GetIDForTopic(),
                 DeviceClass = dev.DeviceClass,
                 Icon = dev.Icon,
                 StateTopic = dev.StatusTopic,
@@ -146,8 +146,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
                 DeviceClass = "climate", 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:thermostat", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
@@ -156,11 +156,12 @@ namespace MQTT_NET_COMELIT.Comelit
                 TemperatureCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/set",
                 ModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/mode/state",
                 ActionTopic = $"home/climate/{dev.GetIDForTopic()}/action/state",
+                PresetModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/preset-mode/state",
                 MinTemp = "15",
                 MaxTemp = "30",
                 TempStep = "0.5",
-                Modes = new List<string> { "off", "heat", "cool", "auto" },
-                FanModes = new List<string> { "auto", "low", "medium", "high" },
+                Modes = new List<string> { "off", "heat", "cool" },
+                PresetModes = new List<string> { "auto", "manual", "semiauto", "off" },
                 CurrentHumidityTopic = $"home/climate/{dev.GetIDForTopic()}/current-humidity/state",
                 TargetHumidityStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/state",
                 TargetHumidityCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/set",
@@ -178,8 +179,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
                 DeviceClass = "switch", 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:pipe-valve", 
                 CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
@@ -197,8 +198,8 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/inputs/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
                 StateTopic = dev.StatusTopic,
                 PayloadOn = "ON",
                 PayloadOff = "OFF",
@@ -214,8 +215,9 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/inputs/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
-                ObjectId = dev.ID, 
-                UniqueId = dev.ID, 
+                ObjectId = dev.GetIDForTopic(), 
+                UniqueId = dev.GetIDForTopic(), 
+                DeviceClass = GetAlarmDeviceClass(dev.Description),
                 StateTopic = dev.StatusTopic,
                 PayloadOn = "ON",
                 PayloadOff = "OFF",
@@ -224,6 +226,36 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.ConfigTopic = $"homeassistant/binary_sensor/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
+        }
+
+        private static string GetAlarmDeviceClass(string description)
+        {
+            description ??= string.Empty;
+
+            if (description.StartsWith("IR ", StringComparison.OrdinalIgnoreCase)
+                || description.StartsWith("BR ", StringComparison.OrdinalIgnoreCase))
+            {
+                return "motion";
+            }
+
+            if (description.StartsWith("CT ", StringComparison.OrdinalIgnoreCase))
+            {
+                if (description.Contains("porta", StringComparison.OrdinalIgnoreCase)
+                    || description.Contains("scorrevole", StringComparison.OrdinalIgnoreCase)
+                    || description.Contains("basculant", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "door";
+                }
+
+                if (description.Contains("finestr", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "window";
+                }
+
+                return "opening";
+            }
+
+            return "safety";
         }
     }
 }
@@ -290,7 +322,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
         public string GetIDForTopic()
         {
-            return ID.Replace("#", "hash").Replace(".", "dot");
+            return MQTT_NET_COMELIT.Utility.Utility.NormalizeComelitId(ID);
         }
 
         /// <summary>
