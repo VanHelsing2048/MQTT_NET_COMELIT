@@ -290,6 +290,7 @@ namespace MQTT_NET_COMELIT.HomeAssistant
 
             return !topic.Contains("/climate/")
                 && !topic.Contains("/sensor/")
+                && !topic.Contains("/cover/")
                 && !topic.Contains("/brightness/")
                 && !topic.Contains("/position/");
         }

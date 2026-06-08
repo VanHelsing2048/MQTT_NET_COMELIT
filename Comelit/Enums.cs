@@ -580,9 +580,8 @@ namespace MQTT_NET_COMELIT.Comelit
         public string TemperatureCommandTopic { get; set; }
         public string ModeStateTopic { get; set; }
         public string ModeCommandTopic { get; set; }
+        public string PowerCommandTopic { get; set; }
         public string ActionTopic { get; set; }
-        public string PresetModeStateTopic { get; set; }
-        public List<string> PresetModes { get; set; }
         public string MinTemp { get; set; }
         public string MaxTemp { get; set; }
         public string TempStep { get; set; }
@@ -649,9 +648,8 @@ namespace MQTT_NET_COMELIT.Comelit
                 ["temperature_command_topic"] = string.IsNullOrEmpty(TemperatureCommandTopic) ? null : TemperatureCommandTopic,
                 ["mode_state_topic"] = string.IsNullOrEmpty(ModeStateTopic) ? null : ModeStateTopic,
                 ["mode_command_topic"] = string.IsNullOrEmpty(ModeCommandTopic) ? null : ModeCommandTopic,
+                ["power_command_topic"] = string.IsNullOrEmpty(PowerCommandTopic) ? null : PowerCommandTopic,
                 ["action_topic"] = string.IsNullOrEmpty(ActionTopic) ? null : ActionTopic,
-                ["preset_mode_state_topic"] = string.IsNullOrEmpty(PresetModeStateTopic) ? null : PresetModeStateTopic,
-                ["preset_modes"] = PresetModes?.Count > 0 ? PresetModes : null,
                 ["min_temp"] = string.IsNullOrEmpty(MinTemp) ? null : MinTemp,
                 ["max_temp"] = string.IsNullOrEmpty(MaxTemp) ? null : MaxTemp,
                 ["temp_step"] = string.IsNullOrEmpty(TempStep) ? null : TempStep,

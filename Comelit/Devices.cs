@@ -51,7 +51,7 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/cover/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() {
                 Name = dev.Description, 
-                DeviceClass = "cover", 
+                DeviceClass = "blind", 
                 ObjectId = dev.GetIDForTopic(), 
                 UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:blinds", 
@@ -145,23 +145,20 @@ namespace MQTT_NET_COMELIT.Comelit
             dev.StatusTopic = $"home/climate/{dev.GetIDForTopic()}/state";
             dev.ConfigPayload = new MQTTConfig() { 
                 Name = dev.Description, 
-                DeviceClass = "climate", 
                 ObjectId = dev.GetIDForTopic(), 
                 UniqueId = dev.GetIDForTopic(), 
                 Icon = "mdi:thermostat", 
-                CommandTopic = dev.CommandTopic, 
                 StateTopic = dev.StatusTopic,
+                PowerCommandTopic = dev.CommandTopic,
                 CurrentTemperatureTopic = $"home/climate/{dev.GetIDForTopic()}/current-temperature/state",
                 TemperatureStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/state",
                 TemperatureCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/set",
                 ModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/mode/state",
                 ActionTopic = $"home/climate/{dev.GetIDForTopic()}/action/state",
-                PresetModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/preset-mode/state",
                 MinTemp = "15",
                 MaxTemp = "30",
                 TempStep = "0.5",
                 Modes = new List<string> { "off", "heat", "cool" },
-                PresetModes = new List<string> { "auto", "manual", "semiauto", "off" },
                 CurrentHumidityTopic = $"home/climate/{dev.GetIDForTopic()}/current-humidity/state",
                 TargetHumidityStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/state",
                 TargetHumidityCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-humidity/set",
@@ -276,6 +273,8 @@ namespace MQTT_NET_COMELIT.Comelit
         public string StatusTopic { get; set; }
         [Newtonsoft.Json.JsonIgnore]
         public string StatusONOFF => Status != "0" ? "ON" : "OFF"; //Da discriminare meglio per gli input - Potrebbero arrivare dei 255 invece di 1
+        [Newtonsoft.Json.JsonIgnore]
+        public string CoverState => Status != "0" ? "open" : "closed";
         [Newtonsoft.Json.JsonIgnore]
         public bool ConfigReadyToSend { get; set; } = false;
         [Newtonsoft.Json.JsonIgnore]

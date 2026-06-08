@@ -23,7 +23,7 @@ internal class Program
             else
             {
                 SetLogLevel(Config.LogLevel);
-                WriteLog("Initializing AddOn version 1.1.2");
+                WriteLog("Initializing AddOn version 1.1.5");
                 MQTTComelit = new MQTTComelit(Config.ComelitUsername, Config.ComelitPassword, Config.ComelitHUBMAC, Config.ComelitHUBIP, Config.ComelitHUBROOTElement, Config.PollingTime);
                 MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
                 MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
@@ -47,6 +47,8 @@ internal class Program
                     comelitWaitSeconds++;
                     await Task.Delay(1000);
                 }
+
+                MQTTHomeAssistant.Publish(MQTTComelit.PollingStatus, "ON", true);
 
                 //Invio configurazione luci ad HA per MQTT Discovery + aggiornamento immediato dello stato
                 if (Config.InitializeDevicesConfiguration)
@@ -81,14 +83,24 @@ internal class Program
                             continue;
                         }
 
-                        // Publish generic ON/OFF status if available
-                        if (!string.IsNullOrEmpty(dev.StatusTopic))
+                        // Device-specific initial state publishes
+                        switch (dev.SubType)
                         {
-                            MQTTHomeAssistant.Publish(dev.StatusTopic, dev.StatusONOFF);
-                            await Task.Delay(25);
+                            case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
+                            case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
+                                MQTTHomeAssistant.Publish(dev.StatusTopic, dev.CoverState);
+                                await Task.Delay(25);
+                                break;
+                            default:
+                                // Publish generic ON/OFF status if available
+                                if (!string.IsNullOrEmpty(dev.StatusTopic))
+                                {
+                                    MQTTHomeAssistant.Publish(dev.StatusTopic, dev.StatusONOFF);
+                                    await Task.Delay(25);
+                                }
+                                break;
                         }
 
-                        // Device-specific initial state publishes
                         switch (dev.SubType)
                         {
                             case Enums.OBJECT_SUBTYPE.DIMMER_LIGHT:

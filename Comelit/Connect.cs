@@ -49,6 +49,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
                 MQTTConnected = false;
                 MQTTLoggedIn = false;
+                MQTTHomeAssistant?.Publish(PollingStatus, "OFF", true);
                 Agent = string.Empty;
                 SessionToken = string.Empty;
                 await Task.Delay(ComelitReconnectDelayMs);
@@ -73,6 +74,7 @@ namespace MQTT_NET_COMELIT.Comelit
         {
             MQTTConnected = false;
             MQTTLoggedIn = false;
+            MQTTHomeAssistant?.Publish(PollingStatus, "OFF", true);
             WriteLog($"Comelit MQTT client disconnected: {arg.Reason}");
             return Task.CompletedTask;
         }

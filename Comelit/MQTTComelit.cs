@@ -132,7 +132,7 @@ namespace MQTT_NET_COMELIT.Comelit
                                     break;
                                 case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
                                 case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
-                                    MQTTHomeAssistant.Publish(device.StatusTopic, device.StatusONOFF);
+                                    MQTTHomeAssistant.Publish(device.StatusTopic, device.CoverState);
                                     if (device is ElectricBlind blind1 && !string.IsNullOrEmpty(blind1.OpenStatus))
                                     {
                                         MQTTHomeAssistant.Publish($"home/cover/{device.GetIDForTopic()}/position/state", blind1.OpenStatus);
@@ -190,7 +190,7 @@ namespace MQTT_NET_COMELIT.Comelit
                     OutData data = GetStep.OutData[0];
                     if (data.SubType == PollingDevice.SubType && data.ID == PollingDevice.ID)
                     {
-                        MQTTHomeAssistant.Publish(PollingStatus, "ON");
+                        MQTTHomeAssistant.Publish(PollingStatus, "ON", true);
                     }
                 }
             }
@@ -557,7 +557,6 @@ namespace MQTT_NET_COMELIT.Comelit
 
             MQTTHomeAssistant.Publish($"home/climate/{id}/mode/state", GetClimateMode(clima));
             MQTTHomeAssistant.Publish($"home/climate/{id}/action/state", GetClimateAction(clima));
-            MQTTHomeAssistant.Publish($"home/climate/{id}/preset-mode/state", GetClimatePresetMode(clima));
         }
 
         private static string GetClimateMode(Clima clima)
@@ -588,28 +587,6 @@ namespace MQTT_NET_COMELIT.Comelit
             }
 
             return "idle";
-        }
-
-        private static string GetClimatePresetMode(Clima clima)
-        {
-            if (IsClimateOff(clima))
-            {
-                return "off";
-            }
-
-            if (clima.SemiautoEnabled == "1")
-            {
-                return "semiauto";
-            }
-
-            return clima.AutoMan switch
-            {
-                "0" => "auto",
-                "1" => "auto",
-                "2" => "manual",
-                "6" => "off",
-                _ => "manual"
-            };
         }
 
         private static bool IsClimateOff(Clima clima)
