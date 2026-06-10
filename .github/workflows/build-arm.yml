@@ -1,30 +1,139 @@
-name: Build ARM Executables
+name: Release Home Assistant Add-on
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/vanhelsing2048/mqtt_net_comelit
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        runtime: [ linux-arm, linux-arm64 ]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-dotnet@v3
+      - uses: actions/checkout@v4
         with:
-          dotnet-version: 7.0.x
-      - run: dotnet restore MQTT_NET_COMELIT.sln
-      - run: dotnet test MQTT_NET_COMELIT.sln --no-build
-      - run: |
-          dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained false -o publish/${{ matrix.runtime }}
-      - name: Archive output
+          fetch-depth: 0
+
+      - name: Bump add-on version
+        id: version
+        shell: pwsh
         run: |
-          cd publish/${{ matrix.runtime }}
-          zip -r ../../MQTT_NET_COMELIT-${{ matrix.runtime }}.zip .
-      - uses: actions/upload-artifact@v3
+          $configPath = "config.yaml"
+          $config = Get-Content $configPath -Raw
+
+          if ($config -notmatch '(?m)^version:\s*"(?<version>\d+\.\d+\.\d+)"') {
+            throw "Cannot find semantic version in config.yaml"
+          }
+
+          $current = [version]$Matches.version
+          $next = "{0}.{1}.{2}" -f $current.Major, $current.Minor, ($current.Build + 1)
+          $updated = [regex]::Replace($config, '(?m)^version:\s*"\d+\.\d+\.\d+"', "version: `"$next`"", 1)
+
+          Set-Content -Path $configPath -Value $updated -NoNewline
+          "version=$next" >> $env:GITHUB_OUTPUT
+          "tag=v$next" >> $env:GITHUB_OUTPUT
+
+      - name: Commit version bump
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config.yaml
+          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v4
         with:
-          name: MQTT_NET_COMELIT-${{ matrix.runtime }}
-          path: MQTT_NET_COMELIT-${{ matrix.runtime }}.zip
+          dotnet-version: 8.0.x
+
+      - run: dotnet restore MQTT_NET_COMELIT.sln
+      - run: dotnet test MQTT_NET_COMELIT.sln -c Release --no-restore
+
+      - name: Publish binaries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $runtimes = @("linux-x64", "linux-arm", "linux-arm64")
+
+          foreach ($runtime in $runtimes) {
+            $output = "publish/$runtime"
+            dotnet publish MQTT_NET_COMELIT.csproj -c Release -r $runtime --self-contained false -o $output
+            Compress-Archive -Path "$output/*" -DestinationPath "artifacts/MQTT_NET_COMELIT-${{ steps.version.outputs.tag }}-$runtime.zip" -Force
+          }
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Home Assistant image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=amd64
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-amd64
+
+      - name: Build and push Home Assistant image for aarch64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=aarch64
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-aarch64
+
+      - name: Build and push Home Assistant image for armv7
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/arm/v7
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=armv7
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-armv7
+
+      - name: Publish multi-architecture image manifest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+            --tag ${{ env.IMAGE_NAME }}:latest \
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-amd64 \
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-aarch64 \
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-armv7
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MQTT_NET_COMELIT-${{ steps.version.outputs.tag }}
+          path: artifacts/*.zip
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ steps.commit.outputs.sha }}
+          name: MQTT_NET_COMELIT ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: artifacts/*.zip
