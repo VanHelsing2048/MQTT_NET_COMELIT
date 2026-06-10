@@ -72,6 +72,20 @@ jobs:
             Compress-Archive -Path "$output/*" -DestinationPath "artifacts/MQTT_NET_COMELIT-${{ steps.version.outputs.tag }}-$runtime.zip" -Force
           }
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MQTT_NET_COMELIT-${{ steps.version.outputs.tag }}
+          path: artifacts/*.zip
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ steps.commit.outputs.sha }}
+          name: MQTT_NET_COMELIT ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: artifacts/*.zip
+
       - uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3
@@ -123,17 +137,3 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-amd64 \
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-aarch64 \
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}-armv7
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MQTT_NET_COMELIT-${{ steps.version.outputs.tag }}
-          path: artifacts/*.zip
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          target_commitish: ${{ steps.commit.outputs.sha }}
-          name: MQTT_NET_COMELIT ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
-          files: artifacts/*.zip
