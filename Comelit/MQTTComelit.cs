@@ -456,6 +456,17 @@ namespace MQTT_NET_COMELIT.Comelit
                     }
 
                     clima.SogliaAttiva = requestedSetpoint;
+                    if (clima.AutoMan == "2")
+                    {
+                        if (clima.EstInv == "1")
+                        {
+                            clima.SogliaManInv = requestedSetpoint;
+                        }
+                        else if (clima.EstInv == "0")
+                        {
+                            clima.SogliaManEst = requestedSetpoint;
+                        }
+                    }
                     string newCommand = BuildClimaTemperatureCommand(SessionToken, device.ID, temperature);
 
                     // Check if this is the same command we just sent (prevent loop)
@@ -506,13 +517,17 @@ namespace MQTT_NET_COMELIT.Comelit
                 if (int.TryParse(payload, out int humidity) && humidity >= 30 && humidity <= 80)
                 {
                     // Check if humidity is already the current value (anti-loop)
-                    if (!string.IsNullOrEmpty(clima.Umidita) && int.TryParse(clima.Umidita, out int currentHum) && currentHum == humidity)
+                    if (!string.IsNullOrEmpty(clima.SogliaAttivaUmi) && int.TryParse(clima.SogliaAttivaUmi, out int currentHum) && currentHum == humidity)
                     {
-                        WriteLog($"[SKIP] Device {device.ID}: Humidity already {humidity}%, skipping duplicate command", LogLevel.Debug);
+                        WriteLog($"[SKIP] Device {device.ID}: Target humidity already {humidity}%, skipping duplicate command", LogLevel.Debug);
                         return;
                     }
 
-                    clima.Umidita = humidity.ToString();
+                    clima.SogliaAttivaUmi = humidity.ToString();
+                    if (clima.AutoManUmi == "2")
+                    {
+                        clima.SogliaManDeumi = humidity.ToString();
+                    }
                     string newCommand = BuildClimaHumidityCommand(SessionToken, device.ID, humidity);
 
                     // Check if this is the same command we just sent (prevent loop)
@@ -525,6 +540,7 @@ namespace MQTT_NET_COMELIT.Comelit
                     LastCommand = newCommand;
                     WriteLog($"Comelit Clima Humidity: {humidity}% -> Publishing to Comelit");
                     MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(LastCommand) });
+                    PublishClimateState(clima);
                 }
                 else
                 {
@@ -596,6 +612,76 @@ namespace MQTT_NET_COMELIT.Comelit
             PublishClimateDerivedState(clima);
         }
 
+        internal void UpdateDeviceThermoControlMode(Device device, string payload)
+        {
+            UpdateDeviceControlMode(device, payload, humidityBranch: false);
+        }
+
+        internal void UpdateDeviceHumidityMode(Device device, string payload)
+        {
+            UpdateDeviceControlMode(device, payload, humidityBranch: true);
+        }
+
+        private void UpdateDeviceControlMode(Device device, string payload, bool humidityBranch)
+        {
+            try
+            {
+                if (device is not Clima clima)
+                {
+                    WriteLog($"UpdateDeviceControlMode - Device '{device?.ID}' is not a Clima", LogLevel.Error);
+                    return;
+                }
+
+                string mode = NormalizeControlModePayload(payload, humidityBranch);
+                if (string.IsNullOrEmpty(mode))
+                {
+                    WriteLog($"UpdateDeviceControlMode - Invalid mode '{payload}'", LogLevel.Warning);
+                    return;
+                }
+
+                string currentMode = humidityBranch ? GetHumidityMode(clima) : GetThermoControlMode(clima);
+                if (mode == currentMode)
+                {
+                    WriteLog($"[SKIP] Device {device.ID}: Control mode already {mode}, skipping duplicate command", LogLevel.Debug);
+                    return;
+                }
+
+                string newCommand = humidityBranch
+                    ? BuildClimaHumidityModeCommand(SessionToken, device.ID, mode)
+                    : BuildClimaThermoControlModeCommand(SessionToken, device.ID, mode);
+                if (string.IsNullOrEmpty(newCommand))
+                {
+                    WriteLog($"UpdateDeviceControlMode - No command built for mode '{payload}'", LogLevel.Warning);
+                    return;
+                }
+
+                if (newCommand == LastCommand)
+                {
+                    WriteLog($"[LOOP-DETECT] Device {device.ID}: Command loop detected, skipping", LogLevel.Debug);
+                    return;
+                }
+
+                if (humidityBranch)
+                {
+                    ApplyHumidityModeState(clima, mode);
+                }
+                else
+                {
+                    clima.AutoMan = mode == "auto" ? "1" : "2";
+                    clima.PowerSt = "1";
+                }
+
+                LastCommand = newCommand;
+                WriteLog($"Comelit Clima {(humidityBranch ? "Humidity" : "Thermo")} Control Mode: {mode} -> Publishing to Comelit");
+                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(LastCommand) });
+                PublishClimateState(clima);
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"UpdateDeviceControlMode - Exception: {ex.Message}", LogLevel.Error);
+            }
+        }
+
         private void PublishClimateDerivedState(Clima clima)
         {
             if (MQTTHomeAssistant == null || clima == null)
@@ -617,6 +703,11 @@ namespace MQTT_NET_COMELIT.Comelit
 
             MQTTHomeAssistant.Publish($"home/climate/{id}/mode/state", GetClimateMode(clima));
             MQTTHomeAssistant.Publish($"home/climate/{id}/action/state", GetClimateAction(clima));
+            MQTTHomeAssistant.Publish($"home/climate/{id}/thermo-control-mode/state", GetThermoControlMode(clima));
+            MQTTHomeAssistant.Publish($"home/climate/{id}/humidity-mode/state", GetHumidityMode(clima));
+            MQTTHomeAssistant.Publish($"home/climate/{id}/dew-point-protection/state", HasStatusBit(clima, 16) ? "ON" : "OFF");
+            MQTTHomeAssistant.Publish($"home/climate/{id}/thermal-output/state", HasStatusBit(clima, 1) ? "ON" : "OFF");
+            MQTTHomeAssistant.Publish($"home/climate/{id}/humidity-output/state", HasStatusBit(clima, 4) ? "ON" : "OFF");
         }
 
         private static string GetClimateMode(Clima clima)
@@ -641,7 +732,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 return "off";
             }
 
-            if (clima.Status == "16")
+            if (HasStatusBit(clima, 1))
             {
                 return clima.EstInv == "1" ? "heating" : "cooling";
             }
@@ -651,7 +742,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
         private static bool IsClimateOff(Clima clima)
         {
-            return clima.PowerSt == "0" || clima.AutoMan == "6";
+            return clima.PowerSt == "0" || clima.AutoMan == "5";
         }
 
         private static string NormalizeClimateModePayload(Clima clima, string payload)
@@ -682,13 +773,60 @@ namespace MQTT_NET_COMELIT.Comelit
             if (mode == "off")
             {
                 clima.PowerSt = "0";
-                clima.AutoMan = "6";
+                clima.AutoMan = "5";
                 return;
             }
 
             clima.PowerSt = "1";
-            clima.AutoMan = "2";
+            clima.AutoMan = "1";
             clima.EstInv = mode == "heat" ? "1" : "0";
+        }
+
+        private static string GetThermoControlMode(Clima clima)
+        {
+            return clima.AutoMan == "2" ? "manual" : "auto";
+        }
+
+        private static string GetHumidityMode(Clima clima)
+        {
+            return clima.AutoManUmi switch
+            {
+                "1" => "auto",
+                "2" => "manual",
+                _ => "off"
+            };
+        }
+
+        private static string NormalizeControlModePayload(string payload, bool allowOff)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return string.Empty;
+            }
+
+            string normalized = payload.Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "auto" => "auto",
+                "manual" => "manual",
+                "off" when allowOff => "off",
+                _ => string.Empty
+            };
+        }
+
+        private static void ApplyHumidityModeState(Clima clima, string mode)
+        {
+            clima.AutoManUmi = mode switch
+            {
+                "auto" => "1",
+                "manual" => "2",
+                _ => "5"
+            };
+        }
+
+        private static bool HasStatusBit(Clima clima, int bit)
+        {
+            return int.TryParse(clima.Status, out int status) && (status & bit) == bit;
         }
 
         private Device CreateDeviceBinding(ElementData elData, string area = "")

@@ -113,6 +113,27 @@ namespace MQTT_NET_COMELIT.Comelit
             };
         }
 
+        public static string BuildClimaThermoControlModeCommand(string token, string objId, string mode)
+        {
+            return mode switch
+            {
+                "auto" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_CLIMA_MODE, ActParams = [1] }),
+                "manual" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_CLIMA_MODE, ActParams = [2] }),
+                _ => string.Empty
+            };
+        }
+
+        public static string BuildClimaHumidityModeCommand(string token, string objId, string mode)
+        {
+            return mode switch
+            {
+                "off" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SET, ActParams = [2] }),
+                "auto" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_UMI_MODE, ActParams = [1] }),
+                "manual" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_UMI_MODE, ActParams = [2] }),
+                _ => string.Empty
+            };
+        }
+
         public static string BuildClimaHumidityCommand(string token, string objId, int humidity)
         {
             // Climate humidity command 30-80%

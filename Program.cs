@@ -61,6 +61,11 @@ internal class Program
                             {
                                 MQTTHomeAssistant.Publish(dev.ConfigTopic, dev.ConfigPayload, true);
                                 await Task.Delay(50);
+                                foreach (var extraConfig in dev.ExtraConfigPayloads)
+                                {
+                                    MQTTHomeAssistant.Publish(extraConfig.Key, extraConfig.Value, true);
+                                    await Task.Delay(50);
+                                }
                             }
                         }
                     }

@@ -166,8 +166,82 @@ namespace MQTT_NET_COMELIT.Comelit
                 Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Climate", SuggestedArea = dev.AreaName } 
             }.ToString();
             dev.ConfigTopic = $"homeassistant/climate/{dev.GetIDForTopic()}/config";
+            AddClimaExtraConfig(dev);
             dev.ConfigReadyToSend = true;
             dev.CanSubscribe = true;
+        }
+
+        private static void AddClimaExtraConfig(Clima dev)
+        {
+            string id = dev.GetIDForTopic();
+            var device = new MQTTDevice()
+            {
+                Identifiers = [dev.AreaName],
+                Manufacturer = "Comelit",
+                Model = "Comelit",
+                Name = "Comelit Climate",
+                SuggestedArea = dev.AreaName
+            };
+
+            dev.ExtraConfigPayloads[$"homeassistant/select/{id}_thermo_control_mode/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} thermal control",
+                ObjectId = $"{id}_thermo_control_mode",
+                UniqueId = $"{id}_thermo_control_mode",
+                Icon = "mdi:thermostat-auto",
+                StateTopic = $"home/climate/{id}/thermo-control-mode/state",
+                CommandTopic = $"home/climate/{id}/thermo-control-mode/set",
+                Options = new List<string> { "auto", "manual" },
+                Device = device
+            }.ToString();
+
+            dev.ExtraConfigPayloads[$"homeassistant/select/{id}_humidity_mode/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} dehumidifier mode",
+                ObjectId = $"{id}_humidity_mode",
+                UniqueId = $"{id}_humidity_mode",
+                Icon = "mdi:air-humidifier-off",
+                StateTopic = $"home/climate/{id}/humidity-mode/state",
+                CommandTopic = $"home/climate/{id}/humidity-mode/set",
+                Options = new List<string> { "off", "auto", "manual" },
+                Device = device
+            }.ToString();
+
+            dev.ExtraConfigPayloads[$"homeassistant/binary_sensor/{id}_dew_point_protection/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} dew point protection",
+                ObjectId = $"{id}_dew_point_protection",
+                UniqueId = $"{id}_dew_point_protection",
+                Icon = "mdi:water-alert",
+                StateTopic = $"home/climate/{id}/dew-point-protection/state",
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = device
+            }.ToString();
+
+            dev.ExtraConfigPayloads[$"homeassistant/binary_sensor/{id}_thermal_output/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} thermal output",
+                ObjectId = $"{id}_thermal_output",
+                UniqueId = $"{id}_thermal_output",
+                Icon = "mdi:pipe-valve",
+                StateTopic = $"home/climate/{id}/thermal-output/state",
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = device
+            }.ToString();
+
+            dev.ExtraConfigPayloads[$"homeassistant/binary_sensor/{id}_humidity_output/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} humidity output",
+                ObjectId = $"{id}_humidity_output",
+                UniqueId = $"{id}_humidity_output",
+                Icon = "mdi:water-percent-alert",
+                StateTopic = $"home/climate/{id}/humidity-output/state",
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = device
+            }.ToString();
         }
         public static void CreateIrrigationValveConfig(IrrigationValve dev)
         {
@@ -266,6 +340,8 @@ namespace MQTT_NET_COMELIT.Comelit
         public string ConfigPayload { get; set; }
         [Newtonsoft.Json.JsonIgnore]
         public string ConfigTopic { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
+        public Dictionary<string, string> ExtraConfigPayloads { get; } = new();
         [Newtonsoft.Json.JsonIgnore]
         public string AreaName { get; set; }
         [Newtonsoft.Json.JsonIgnore]

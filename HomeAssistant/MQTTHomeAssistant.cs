@@ -183,6 +183,8 @@ namespace MQTT_NET_COMELIT.HomeAssistant
                                 SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/target-temperature/set");
                                 SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/target-humidity/set");
                                 SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/mode/set");
+                                SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/thermo-control-mode/set");
+                                SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/humidity-mode/set");
                                 break;
                         }
                     }
@@ -231,6 +233,14 @@ namespace MQTT_NET_COMELIT.HomeAssistant
             else if (topic.Contains("/mode/set"))
             {
                 MQTTComelit.UpdateDeviceClimateMode(device, payload);
+            }
+            else if (topic.Contains("/thermo-control-mode/set"))
+            {
+                MQTTComelit.UpdateDeviceThermoControlMode(device, payload);
+            }
+            else if (topic.Contains("/humidity-mode/set"))
+            {
+                MQTTComelit.UpdateDeviceHumidityMode(device, payload);
             }
             else if (topic.Contains("/position"))
             {

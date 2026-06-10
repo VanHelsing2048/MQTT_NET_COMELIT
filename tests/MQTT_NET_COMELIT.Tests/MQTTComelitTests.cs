@@ -90,5 +90,112 @@ namespace MQTT_NET_COMELIT.Tests
             Assert.Contains("\"obj_id\":\"clima1\"", payload);
             Assert.Contains("\"sessiontoken\":\"token\"", payload);
         }
+
+        [Theory]
+        [InlineData("auto", "\"act_type\":13", "\"act_params\":[1]", "1")]
+        [InlineData("manual", "\"act_type\":13", "\"act_params\":[2]", "2")]
+        public void UpdateDeviceThermoControlMode_ValidMode_PublishesComelitPayload(string mode, string expectedActType, string expectedParams, string expectedAutoMan)
+        {
+            var mockClient = new Mock<IMqttClient>();
+            mockClient.Setup(m => m.PublishAsync(It.IsAny<MqttApplicationMessage>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync((MqttClientPublishResult)null);
+
+            var comelit = CreateComelitWithClient(mockClient);
+            var device = new Clima
+            {
+                ID = "clima1",
+                SubType = Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER,
+                PowerSt = "1",
+                AutoMan = mode == "auto" ? "2" : "1"
+            };
+
+            var method = typeof(MQTTComelit).GetMethod("UpdateDeviceThermoControlMode", BindingFlags.Instance | BindingFlags.NonPublic);
+            method.Invoke(comelit, new object[] { device, mode });
+
+            string payload = (string)typeof(MQTTComelit).GetField("LastCommand", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(comelit)!;
+            Assert.Contains(expectedActType, payload);
+            Assert.Contains(expectedParams, payload);
+            Assert.Equal(expectedAutoMan, device.AutoMan);
+        }
+
+        [Theory]
+        [InlineData("off", "\"act_type\":0", "\"act_params\":[2]", "5")]
+        [InlineData("auto", "\"act_type\":23", "\"act_params\":[1]", "1")]
+        [InlineData("manual", "\"act_type\":23", "\"act_params\":[2]", "2")]
+        public void UpdateDeviceHumidityMode_ValidMode_PublishesComelitPayload(string mode, string expectedActType, string expectedParams, string expectedAutoManUmi)
+        {
+            var mockClient = new Mock<IMqttClient>();
+            mockClient.Setup(m => m.PublishAsync(It.IsAny<MqttApplicationMessage>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync((MqttClientPublishResult)null);
+
+            var comelit = CreateComelitWithClient(mockClient);
+            var device = new Clima
+            {
+                ID = "clima1",
+                SubType = Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER,
+                AutoManUmi = mode == "off" ? "2" : "5"
+            };
+
+            var method = typeof(MQTTComelit).GetMethod("UpdateDeviceHumidityMode", BindingFlags.Instance | BindingFlags.NonPublic);
+            method.Invoke(comelit, new object[] { device, mode });
+
+            string payload = (string)typeof(MQTTComelit).GetField("LastCommand", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(comelit)!;
+            Assert.Contains(expectedActType, payload);
+            Assert.Contains(expectedParams, payload);
+            Assert.Equal(expectedAutoManUmi, device.AutoManUmi);
+        }
+
+        [Fact]
+        public void UpdateDeviceTemperature_ManualCooling_UpdatesActiveAndManualSetpoint()
+        {
+            var mockClient = new Mock<IMqttClient>();
+            mockClient.Setup(m => m.PublishAsync(It.IsAny<MqttApplicationMessage>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync((MqttClientPublishResult)null);
+
+            var comelit = CreateComelitWithClient(mockClient);
+            var device = new Clima
+            {
+                ID = "clima1",
+                SubType = Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER,
+                AutoMan = "2",
+                EstInv = "0",
+                SogliaAttiva = "280"
+            };
+
+            var method = typeof(MQTTComelit).GetMethod("UpdateDeviceTemperature", BindingFlags.Instance | BindingFlags.NonPublic);
+            method.Invoke(comelit, new object[] { device, "27.0" });
+
+            string payload = (string)typeof(MQTTComelit).GetField("LastCommand", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(comelit)!;
+            Assert.Contains("\"act_type\":2", payload);
+            Assert.Contains("\"act_params\":[270]", payload);
+            Assert.Equal("270", device.SogliaAttiva);
+            Assert.Equal("270", device.SogliaManEst);
+        }
+
+        [Fact]
+        public void UpdateDeviceHumidity_ManualDehumidifier_UpdatesActiveAndManualSetpoint()
+        {
+            var mockClient = new Mock<IMqttClient>();
+            mockClient.Setup(m => m.PublishAsync(It.IsAny<MqttApplicationMessage>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync((MqttClientPublishResult)null);
+
+            var comelit = CreateComelitWithClient(mockClient);
+            var device = new Clima
+            {
+                ID = "clima1",
+                SubType = Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER,
+                AutoManUmi = "2",
+                SogliaAttivaUmi = "70"
+            };
+
+            var method = typeof(MQTTComelit).GetMethod("UpdateDeviceHumidity", BindingFlags.Instance | BindingFlags.NonPublic);
+            method.Invoke(comelit, new object[] { device, "65" });
+
+            string payload = (string)typeof(MQTTComelit).GetField("LastCommand", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(comelit)!;
+            Assert.Contains("\"act_type\":19", payload);
+            Assert.Contains("\"act_params\":[65]", payload);
+            Assert.Equal("65", device.SogliaAttivaUmi);
+            Assert.Equal("65", device.SogliaManDeumi);
+        }
     }
 }

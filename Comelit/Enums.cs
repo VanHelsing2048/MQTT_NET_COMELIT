@@ -586,6 +586,7 @@ namespace MQTT_NET_COMELIT.Comelit
         public string MaxTemp { get; set; }
         public string TempStep { get; set; }
         public List<string> Modes { get; set; }
+        public List<string> Options { get; set; }
         public List<string> FanModes { get; set; }
         public string SwingMode { get; set; }
         public string CurrentHumidityTopic { get; set; }
@@ -654,6 +655,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 ["max_temp"] = string.IsNullOrEmpty(MaxTemp) ? null : MaxTemp,
                 ["temp_step"] = string.IsNullOrEmpty(TempStep) ? null : TempStep,
                 ["modes"] = Modes?.Count > 0 ? Modes : null,
+                ["options"] = Options?.Count > 0 ? Options : null,
                 ["fan_modes"] = FanModes?.Count > 0 ? FanModes : null,
                 ["swing_mode"] = string.IsNullOrEmpty(SwingMode) ? null : SwingMode,
                 ["current_humidity_topic"] = string.IsNullOrEmpty(CurrentHumidityTopic) ? null : CurrentHumidityTopic,
