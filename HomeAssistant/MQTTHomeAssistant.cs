@@ -18,8 +18,8 @@ namespace MQTT_NET_COMELIT.HomeAssistant
         Task MQTTTask;
         private Dictionary<string, Device> _deviceCache = new();
 
-        private const int RetryDelayMs = 5000;
-        private int _retryCount = 0;
+        private const int MinRetryDelayMs = 5000;
+        private const int MaxRetryDelayMs = 60000;
 
         public MQTTHomeAssistant(string username, string password, string ip, MQTTComelit mQTTComelit)
         {
@@ -42,79 +42,67 @@ namespace MQTT_NET_COMELIT.HomeAssistant
 
         private async Task StartMQTT()
         {
-            _retryCount = 0;
-            await ConnectWithRetry();
-        }
-
-        private async Task ConnectWithRetry()
-        {
-            try
+            int retryCount = 0;
+            while (true)
             {
-                using (MQTTClient = new MqttClientFactory().CreateMqttClient())
+                try
                 {
-                    var mqttClientOptions = new MqttClientOptionsBuilder()
-                        .WithTcpServer(MQTTIPAddress)
-                        .WithCredentials(MQTTUsername, MQTTPassword)
-                        .WithCleanSession(true)
-                        .Build();
-
-                    var timeout = new CancellationTokenSource(5000);
-                    MQTTClient.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-                    MQTTClient.ConnectedAsync += MqttClient_ConnectedAsync;
-                    MQTTClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
-
-                    var response = await MQTTClient.ConnectAsync(mqttClientOptions, timeout.Token);
-
-                    if (response.ResultCode == MqttClientConnectResultCode.Success)
+                    using (MQTTClient = new MqttClientFactory().CreateMqttClient())
                     {
-                        _retryCount = 0; // Reset retry count on successful connection
-                        WriteLog("HomeAssistant MQTT client connected successfully.");
-                        // Keep the connection alive
-                        while (MQTTClient.IsConnected)
+                        var mqttClientOptions = new MqttClientOptionsBuilder()
+                            .WithTcpServer(MQTTIPAddress)
+                            .WithCredentials(MQTTUsername, MQTTPassword)
+                            .WithCleanSession(true)
+                            .Build();
+
+                        using var timeout = new CancellationTokenSource(5000);
+                        MQTTClient.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+                        MQTTClient.ConnectedAsync += MqttClient_ConnectedAsync;
+                        MQTTClient.DisconnectedAsync += MqttClient_DisconnectedAsync;
+
+                        var response = await MQTTClient.ConnectAsync(mqttClientOptions, timeout.Token);
+
+                        if (response.ResultCode == MqttClientConnectResultCode.Success)
                         {
-                            await Task.Delay(1000);
+                            retryCount = 0;
+                            WriteLog("HomeAssistant MQTT client connected successfully.");
+
+                            while (MQTTClient.IsConnected)
+                            {
+                                await Task.Delay(1000);
+                            }
+                        }
+                        else
+                        {
+                            WriteLog($"HomeAssistant MQTT connection failed: {response.ResultCode}", LogLevel.Warning);
                         }
                     }
-                    else
-                    {
-                        WriteLog($"HomeAssistant MQTT connection failed: {response.ResultCode}");
-                        await HandleConnectionFailure();
-                    }
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                WriteLog("HomeAssistant MQTT connection timeout.");
-                await HandleConnectionFailure();
-            }
-            catch (Exception ex)
-            {
-                WriteLog($"HomeAssistant MQTT error: {ex.Message}");
-                await HandleConnectionFailure();
-            }
-            finally
-            {
-                ConnectedAndLoggedIn = false;
-                WriteLog("The HomeAssistant MQTT client is disconnected.");
-            }
-        }
+                catch (OperationCanceledException)
+                {
+                    WriteLog("HomeAssistant MQTT connection timeout.", LogLevel.Warning);
+                }
+                catch (Exception ex)
+                {
+                    WriteLog($"HomeAssistant MQTT error: {ex.Message}", LogLevel.Warning);
+                }
+                finally
+                {
+                    ConnectedAndLoggedIn = false;
+                    WriteLog("The HomeAssistant MQTT client is disconnected.");
+                }
 
-        private async Task HandleConnectionFailure()
-        {
-            _retryCount++;
-            WriteLog($"Retrying HomeAssistant MQTT connection (attempt {_retryCount}) in {RetryDelayMs}ms...");
-            await Task.Delay(RetryDelayMs);
-            await ConnectWithRetry();
+                retryCount++;
+                int retryDelayMs = Math.Min(MinRetryDelayMs * retryCount, MaxRetryDelayMs);
+                WriteLog($"Retrying HomeAssistant MQTT connection (attempt {retryCount}) in {retryDelayMs}ms...");
+                await Task.Delay(retryDelayMs);
+            }
         }
 
         private Task MqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs args)
         {
             ConnectedAndLoggedIn = false;
             WriteLog("HomeAssistant MQTT client disconnected.");
-
-            // Attempt to reconnect
-            _ = Task.Run(async () => await HandleConnectionFailure());
-
             return Task.CompletedTask;
         }
 
