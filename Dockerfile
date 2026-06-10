@@ -1,13 +1,8 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-
-WORKDIR /src
-COPY . .
-RUN dotnet publish MQTT_NET_COMELIT.csproj -c Release --self-contained false -o /app
-
 FROM mcr.microsoft.com/dotnet/runtime:8.0
 
 ARG BUILD_VERSION
 ARG BUILD_ARCH
+ARG PUBLISH_DIR=publish/linux-x64
 
 LABEL \
   io.hass.version="${BUILD_VERSION}" \
@@ -15,6 +10,6 @@ LABEL \
   io.hass.arch="${BUILD_ARCH}"
 
 WORKDIR /app
-COPY --from=build /app .
+COPY ${PUBLISH_DIR}/ .
 
 ENTRYPOINT ["dotnet", "/app/MQTT_NET_COMELIT.dll"]
