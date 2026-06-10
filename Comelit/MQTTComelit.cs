@@ -257,6 +257,12 @@ namespace MQTT_NET_COMELIT.Comelit
                         break;
                     case Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER:
                         // Temperature command handling
+                        if (payload == "ON" || payload == "OFF")
+                        {
+                            UpdateDeviceClimateMode(device, payload);
+                            return;
+                        }
+
                         if (double.TryParse(payload, System.Globalization.CultureInfo.InvariantCulture, out double temperature) && temperature >= 15 && temperature <= 30)
                         {
                             if (device is Clima clima)
@@ -531,6 +537,60 @@ namespace MQTT_NET_COMELIT.Comelit
             }
         }
 
+        internal void UpdateDeviceClimateMode(Device device, string payload)
+        {
+            try
+            {
+                if (device == null)
+                {
+                    WriteLog("UpdateDeviceClimateMode - Device is null", LogLevel.Error);
+                    return;
+                }
+
+                if (device is not Clima clima)
+                {
+                    WriteLog($"UpdateDeviceClimateMode - Device '{device.ID}' is not a Clima (Type: {device.SubType})", LogLevel.Error);
+                    return;
+                }
+
+                string mode = NormalizeClimateModePayload(clima, payload);
+                if (string.IsNullOrEmpty(mode))
+                {
+                    WriteLog($"UpdateDeviceClimateMode - Invalid climate mode '{payload}'. Expected heat, cool, off, ON or OFF", LogLevel.Warning);
+                    return;
+                }
+
+                if (mode == GetClimateMode(clima))
+                {
+                    WriteLog($"[SKIP] Device {device.ID}: Climate mode already {mode}, skipping duplicate command", LogLevel.Debug);
+                    return;
+                }
+
+                string newCommand = BuildClimaModeCommand(SessionToken, device.ID, mode);
+                if (string.IsNullOrEmpty(newCommand))
+                {
+                    WriteLog($"UpdateDeviceClimateMode - No command built for climate mode '{payload}'", LogLevel.Warning);
+                    return;
+                }
+
+                if (newCommand == LastCommand)
+                {
+                    WriteLog($"[LOOP-DETECT] Device {device.ID}: Command loop detected, skipping", LogLevel.Debug);
+                    return;
+                }
+
+                ApplyClimateModeState(clima, mode);
+                LastCommand = newCommand;
+                WriteLog($"Comelit Clima Mode: {mode} -> Publishing to Comelit");
+                MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = PublishTopic, PayloadSegment = Encoding.ASCII.GetBytes(LastCommand) });
+                PublishClimateState(clima);
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"UpdateDeviceClimateMode - Exception: {ex.Message}", LogLevel.Error);
+            }
+        }
+
         internal void PublishClimateState(Clima clima)
         {
             PublishClimateDerivedState(clima);
@@ -568,8 +628,8 @@ namespace MQTT_NET_COMELIT.Comelit
 
             return clima.EstInv switch
             {
-                "0" => "heat",
-                "1" => "cool",
+                "1" => "heat",
+                "0" => "cool",
                 _ => "heat"
             };
         }
@@ -583,7 +643,7 @@ namespace MQTT_NET_COMELIT.Comelit
 
             if (clima.Status == "16")
             {
-                return clima.EstInv == "1" ? "cooling" : "heating";
+                return clima.EstInv == "1" ? "heating" : "cooling";
             }
 
             return "idle";
@@ -592,6 +652,43 @@ namespace MQTT_NET_COMELIT.Comelit
         private static bool IsClimateOff(Clima clima)
         {
             return clima.PowerSt == "0" || clima.AutoMan == "6";
+        }
+
+        private static string NormalizeClimateModePayload(Clima clima, string payload)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return string.Empty;
+            }
+
+            string normalized = payload.Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "heat" => "heat",
+                "cool" => "cool",
+                "off" => "off",
+                "on" => IsClimateOff(clima) ? ClimateModeFromSeason(clima) : GetClimateMode(clima),
+                _ => string.Empty
+            };
+        }
+
+        private static string ClimateModeFromSeason(Clima clima)
+        {
+            return clima.EstInv == "0" ? "cool" : "heat";
+        }
+
+        private static void ApplyClimateModeState(Clima clima, string mode)
+        {
+            if (mode == "off")
+            {
+                clima.PowerSt = "0";
+                clima.AutoMan = "6";
+                return;
+            }
+
+            clima.PowerSt = "1";
+            clima.AutoMan = "2";
+            clima.EstInv = mode == "heat" ? "1" : "0";
         }
 
         private Device CreateDeviceBinding(ElementData elData, string area = "")

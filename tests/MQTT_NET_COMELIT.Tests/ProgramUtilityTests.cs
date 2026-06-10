@@ -13,7 +13,7 @@ namespace MQTT_NET_COMELIT.Tests
             var sw = new StringWriter();
             Console.SetOut(sw);
 
-            Utility.WriteLog("hello");
+            MQTT_NET_COMELIT.Utility.Utility.WriteLog("hello");
 
             var output = sw.ToString().Trim();
             Assert.EndsWith(" - hello", output);

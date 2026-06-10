@@ -179,9 +179,10 @@ namespace MQTT_NET_COMELIT.HomeAssistant
                                 break;
 
                             case Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER:
-                                // Subscribe only to SET topics for temperature and humidity
+                                // Subscribe only to SET topics for climate controls
                                 SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/target-temperature/set");
                                 SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/target-humidity/set");
+                                SubscribeToTopic($"home/climate/{device.GetIDForTopic()}/mode/set");
                                 break;
                         }
                     }
@@ -226,6 +227,10 @@ namespace MQTT_NET_COMELIT.HomeAssistant
             else if (topic.Contains("/target-humidity/set"))
             {
                 MQTTComelit.UpdateDeviceHumidity(device, payload);
+            }
+            else if (topic.Contains("/mode/set"))
+            {
+                MQTTComelit.UpdateDeviceClimateMode(device, payload);
             }
             else if (topic.Contains("/position"))
             {

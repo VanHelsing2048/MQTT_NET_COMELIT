@@ -154,6 +154,7 @@ namespace MQTT_NET_COMELIT.Comelit
                 TemperatureStateTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/state",
                 TemperatureCommandTopic = $"home/climate/{dev.GetIDForTopic()}/target-temperature/set",
                 ModeStateTopic = $"home/climate/{dev.GetIDForTopic()}/mode/state",
+                ModeCommandTopic = $"home/climate/{dev.GetIDForTopic()}/mode/set",
                 ActionTopic = $"home/climate/{dev.GetIDForTopic()}/action/state",
                 MinTemp = "15",
                 MaxTemp = "30",

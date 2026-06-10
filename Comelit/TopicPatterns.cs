@@ -39,6 +39,8 @@ namespace MQTT_NET_COMELIT.Comelit
         public const string ClimateCurrentTemperatureTopic = $"{BasePath}/climate/{{0}}/current-temperature/state";
         public const string ClimateTargetTemperatureSetTopic = $"{BasePath}/climate/{{0}}/target-temperature/set";
         public const string ClimateTargetTemperatureStateTopic = $"{BasePath}/climate/{{0}}/target-temperature/state";
+        public const string ClimateModeSetTopic = $"{BasePath}/climate/{{0}}/mode/set";
+        public const string ClimateModeStateTopic = $"{BasePath}/climate/{{0}}/mode/state";
         public const string ClimateCurrentHumidityTopic = $"{BasePath}/climate/{{0}}/current-humidity/state";
         public const string ClimateTargetHumiditySetTopic = $"{BasePath}/climate/{{0}}/target-humidity/set";
         public const string ClimateTargetHumidityStateTopic = $"{BasePath}/climate/{{0}}/target-humidity/state";

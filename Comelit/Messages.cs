@@ -49,7 +49,7 @@ namespace MQTT_NET_COMELIT.Comelit
         [JsonProperty("act_type")] public ACTION_TYPE ActType { get; set; } = ACTION_TYPE.SET;
         [JsonProperty("sessiontoken")] public string SessionToken { get; set; } = string.Empty;
         [JsonProperty("obj_id")] public string ObjId { get; set; } = string.Empty;
-        [JsonProperty("act_params")] public string[] ActParams { get; set; } = [];
+        [JsonProperty("act_params")] public object[] ActParams { get; set; } = [];
     }
 
     internal static class ComelitMessages
@@ -99,13 +99,24 @@ namespace MQTT_NET_COMELIT.Comelit
         public static string BuildClimaTemperatureCommand(string token, string objId, double temperature)
         {
             // Climate temperature command 15-30°C
-            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.CLIMA_SET_POINT, ActParams = [Utility.Utility.ToComelitTemperatureValue(temperature)] });
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.CLIMA_SET_POINT, ActParams = [int.Parse(Utility.Utility.ToComelitTemperatureValue(temperature), System.Globalization.CultureInfo.InvariantCulture)] });
+        }
+
+        public static string BuildClimaModeCommand(string token, string objId, string mode)
+        {
+            return mode switch
+            {
+                "heat" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_SEASON, ActParams = [1] }),
+                "cool" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SWITCH_SEASON, ActParams = [0] }),
+                "off" => Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.SET, ActParams = [0] }),
+                _ => string.Empty
+            };
         }
 
         public static string BuildClimaHumidityCommand(string token, string objId, int humidity)
         {
             // Climate humidity command 30-80%
-            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.UMI_SETPOINT, ActParams = [humidity.ToString()] });
+            return Serialize(new ActionCommandMessage { SessionToken = token, ObjId = objId, ActType = ACTION_TYPE.UMI_SETPOINT, ActParams = [humidity] });
         }
     }
 }

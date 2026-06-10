@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Runtime.Serialization;
 using MQTT_NET_COMELIT.Comelit;
-using MQTT_NET_COMELIT.Comelit.DevicesStructure;
 using MQTT_NET_COMELIT.HomeAssistant;
 using Xunit;
 using System.Collections.Generic;
@@ -22,6 +21,7 @@ namespace MQTT_NET_COMELIT.Tests
 
             var ha = (MQTTHomeAssistant)FormatterServices.GetUninitializedObject(typeof(MQTTHomeAssistant));
             ha.MQTTComelit = comelit;
+            typeof(MQTTHomeAssistant).GetField("_deviceCache", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(ha, new Dictionary<string, Device>());
 
             var method = typeof(MQTTHomeAssistant).GetMethod("GetDeviceFromTopic", BindingFlags.Instance | BindingFlags.NonPublic);
             var result = (Device)method.Invoke(ha, new object[] { $"home/lights/{device.GetIDForTopic()}/set" });

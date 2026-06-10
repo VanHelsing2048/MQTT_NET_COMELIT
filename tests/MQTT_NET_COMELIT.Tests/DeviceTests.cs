@@ -1,5 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MQTT_NET_COMELIT.Comelit.DevicesStructure;
+using MQTT_NET_COMELIT.Comelit;
 using Xunit;
 
 namespace MQTT_NET_COMELIT.Tests
@@ -11,7 +10,7 @@ namespace MQTT_NET_COMELIT.Tests
         {
             var device = new DigitalLight { ID = "room#light.1" };
             var result = device.GetIDForTopic();
-            Assert.Equal("roomhashlightdot1", result);
+            Assert.Equal("room_light_1", result);
         }
     }
 }
