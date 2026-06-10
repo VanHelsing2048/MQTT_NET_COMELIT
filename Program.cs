@@ -8,14 +8,17 @@ internal class Program
 {
     static MQTTComelit MQTTComelit;
     static MQTTHomeAssistant MQTTHomeAssistant;
-    static readonly string ConfigFile = Path.Combine(Environment.CurrentDirectory, "data", "options.json");
+    static readonly string HomeAssistantConfigFile = "/data/options.json";
+    static readonly string LocalConfigFile = Path.Combine(Environment.CurrentDirectory, "data", "options.json");
     static Config Config;
 
     private static async Task Main()
     {
-        if (File.Exists(ConfigFile))
+        string configFile = ResolveConfigFile();
+
+        if (File.Exists(configFile))
         {
-            Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(ConfigFile));
+            Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configFile));
             if (Config == null)
             {
                 Console.WriteLine("Unable to initialize AddOn - Config is broken!");
@@ -23,7 +26,8 @@ internal class Program
             else
             {
                 SetLogLevel(Config.LogLevel);
-                WriteLog("Initializing AddOn version 1.1.5");
+                WriteLog($"Loading configuration from {configFile}", LogLevel.Debug);
+                WriteLog("Initializing AddOn");
                 MQTTComelit = new MQTTComelit(Config.ComelitUsername, Config.ComelitPassword, Config.ComelitHUBMAC, Config.ComelitHUBIP, Config.ComelitHUBROOTElement, Config.PollingTime);
                 MQTTHomeAssistant = new MQTTHomeAssistant(Config.HomeAssistantUsername, Config.HomeAssistantPassword, Config.HomeAssistantIP, MQTTComelit);
                 MQTTComelit.MQTTHomeAssistant = MQTTHomeAssistant;
@@ -71,7 +75,7 @@ internal class Program
                     }
                     MQTTHomeAssistant.Publish(MQTTComelit.PollingConfigTopic, MQTTComelit.PollingConfigPayload, true);
                     Config.InitializeDevicesConfiguration = false;
-                    File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(Config));
+                    File.WriteAllText(configFile, JsonConvert.SerializeObject(Config));
                 }
 
                 // Publish initial state for all known devices to Home Assistant
@@ -168,5 +172,15 @@ internal class Program
         }
         Console.ReadLine();
 
+    }
+
+    private static string ResolveConfigFile()
+    {
+        if (File.Exists(HomeAssistantConfigFile))
+        {
+            return HomeAssistantConfigFile;
+        }
+
+        return LocalConfigFile;
     }
 }
