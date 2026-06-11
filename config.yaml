@@ -1,6 +1,6 @@
 name: "Comelit Integration"
 description: "Integrazione alla domotica Comelit"
-version: "1.1.11"
+version: "1.1.12"
 slug: "comelit-integration"
 image: "ghcr.io/vanhelsing2048/mqtt_net_comelit"
 init: false
