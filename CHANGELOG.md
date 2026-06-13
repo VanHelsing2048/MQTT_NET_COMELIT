@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.14
+
+- Add a synthetic `Senza area` area for supported top-level Comelit devices that do not match an existing area.
+- Expose generic Comelit `RULE` objects as MQTT binary sensors instead of discarding them when they are not alarm rules.
+- Add dedicated Home Assistant MQTT sensors for climate current humidity and target humidity so both values can keep numeric history.
+- Update README topic documentation for generic rules and climate humidity sensors.
+
 ## 1.1.13
 
 - Re-publish the current known Home Assistant MQTT states after the Home Assistant MQTT client reconnects.

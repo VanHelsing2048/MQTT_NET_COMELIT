@@ -207,6 +207,32 @@ namespace MQTT_NET_COMELIT.Comelit
                 Device = device
             }.ToString();
 
+            dev.ExtraConfigPayloads[$"homeassistant/sensor/{id}_current_humidity/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} humidity",
+                ObjectId = $"{id}_current_humidity",
+                UniqueId = $"{id}_current_humidity",
+                DeviceClass = "humidity",
+                StateTopic = $"home/climate/{id}/current-humidity/state",
+                UnitOfMeasurement = "%",
+                StateClass = "measurement",
+                Icon = "mdi:water-percent",
+                Device = device
+            }.ToString();
+
+            dev.ExtraConfigPayloads[$"homeassistant/sensor/{id}_target_humidity/config"] = new MQTTConfig()
+            {
+                Name = $"{dev.Description} target humidity",
+                ObjectId = $"{id}_target_humidity",
+                UniqueId = $"{id}_target_humidity",
+                DeviceClass = "humidity",
+                StateTopic = $"home/climate/{id}/target-humidity/state",
+                UnitOfMeasurement = "%",
+                StateClass = "measurement",
+                Icon = "mdi:water-percent",
+                Device = device
+            }.ToString();
+
             dev.ExtraConfigPayloads[$"homeassistant/binary_sensor/{id}_dew_point_protection/config"] = new MQTTConfig()
             {
                 Name = $"{dev.Description} dew point protection",
@@ -294,6 +320,23 @@ namespace MQTT_NET_COMELIT.Comelit
                 PayloadOn = "ON",
                 PayloadOff = "OFF",
                 Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Alarm", SuggestedArea = dev.AreaName } 
+            }.ToString();
+            dev.ConfigTopic = $"homeassistant/binary_sensor/{dev.GetIDForTopic()}/config";
+            dev.ConfigReadyToSend = true;
+            dev.CanSubscribe = true;
+        }
+
+        internal static void CreateRuleConfig(Input dev)
+        {
+            dev.StatusTopic = $"home/rules/{dev.GetIDForTopic()}/state";
+            dev.ConfigPayload = new MQTTConfig() {
+                Name = dev.Description,
+                ObjectId = dev.GetIDForTopic(),
+                UniqueId = dev.GetIDForTopic(),
+                StateTopic = dev.StatusTopic,
+                PayloadOn = "ON",
+                PayloadOff = "OFF",
+                Device = new MQTTDevice() { Identifiers = [dev.AreaName], Manufacturer = "Comelit", Model = "Comelit", Name = "Comelit Rule", SuggestedArea = dev.AreaName }
             }.ToString();
             dev.ConfigTopic = $"homeassistant/binary_sensor/{dev.GetIDForTopic()}/config";
             dev.ConfigReadyToSend = true;

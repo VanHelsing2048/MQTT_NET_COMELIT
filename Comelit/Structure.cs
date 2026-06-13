@@ -11,6 +11,8 @@ namespace MQTT_NET_COMELIT.Comelit
         {
             ["Bagno Primo piano"] = "Bagno PP"
         };
+        private const string UnassignedAreaId = "DOM#NOAREA";
+        private const string UnassignedAreaDescription = "Senza area";
 
         private void CreateStructure(Header root)
         {
@@ -116,6 +118,16 @@ namespace MQTT_NET_COMELIT.Comelit
                 else if (IsSystemSensor(device))
                 {
                     area = GetOrCreateSyntheticArea("DOM#SYS", "Sistema", device.Type, device.SubType, areaById, areaByName);
+                }
+                else
+                {
+                    area = GetOrCreateSyntheticArea(
+                        UnassignedAreaId,
+                        UnassignedAreaDescription,
+                        Enums.OBJECT_TYPE.ZONE,
+                        Enums.OBJECT_SUBTYPE.GENERIC_ZONE,
+                        areaById,
+                        areaByName);
                 }
             }
 

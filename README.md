@@ -18,12 +18,12 @@ Supported devices:
 - on/off lights;
 - dimmers with 0-255 brightness;
 - electric blinds/covers with open, close, stop, and position control;
-- climate/thermostat devices with temperature, humidity, heat/cool/off mode, and automatic/manual controls;
+- climate/thermostat devices with temperature, humidity, humidity history sensors, heat/cool/off mode, and automatic/manual controls;
 - irrigation valves;
 - switches and digital outputs;
 - temporary buttons and automations;
 - power/water sensors and input binary sensors;
-- supported Comelit alarm rule sensors.
+- supported Comelit alarm rule sensors and generic rule binary sensors.
 
 ## Requirements
 
@@ -93,8 +93,11 @@ Examples:
 | Cover | `home/cover/<id>/set` | `home/cover/<id>/state` | `homeassistant/cover/<id>/config` |
 | Cover position | `home/cover/<id>/position/set` | `home/cover/<id>/position/state` | `homeassistant/cover/<id>/config` |
 | Climate | `home/climate/<id>/mode/set` | `home/climate/<id>/mode/state` | `homeassistant/climate/<id>/config` |
+| Climate humidity sensor | - | `home/climate/<id>/current-humidity/state` | `homeassistant/sensor/<id>_current_humidity/config` |
+| Climate target humidity sensor | - | `home/climate/<id>/target-humidity/state` | `homeassistant/sensor/<id>_target_humidity/config` |
 | Sensor | - | `home/sensor/<id>/state` | `homeassistant/sensor/<id>/config` |
 | Input | - | `home/inputs/<id>/state` | `homeassistant/binary_sensor/<id>/config` |
+| Rule | - | `home/rules/<id>/state` | `homeassistant/binary_sensor/<id>/config` |
 
 Comelit IDs are normalized before being used in MQTT topics.
 

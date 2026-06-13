@@ -864,9 +864,21 @@ namespace MQTT_NET_COMELIT.Comelit
                     {
                         output = CreateAlarmBinding(elData, area);
                     }
+                    else
+                    {
+                        output = CreateRuleBinding(elData, area);
+                    }
                     break;
             }
             return output;
+        }
+
+        private Device CreateRuleBinding(ElementData elData, string area)
+        {
+            Input rule = JsonConvert.DeserializeObject<Input>(JsonConvert.SerializeObject(elData));
+            rule.AreaName = area;
+            Devices.CreateRuleConfig(rule);
+            return rule;
         }
 
         private Device CreateAlarmBinding(ElementData elData, string area)
