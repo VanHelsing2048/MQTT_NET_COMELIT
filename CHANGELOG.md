@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.14
+## 1.1.15
 
 - Add a synthetic `Senza area` area for supported top-level Comelit devices that do not match an existing area.
 - Expose generic Comelit `RULE` objects as MQTT binary sensors instead of discarding them when they are not alarm rules.
