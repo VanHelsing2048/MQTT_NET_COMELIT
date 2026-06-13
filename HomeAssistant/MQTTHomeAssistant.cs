@@ -106,13 +106,13 @@ namespace MQTT_NET_COMELIT.HomeAssistant
             return Task.CompletedTask;
         }
 
-        private Task MqttClient_ConnectedAsync(MqttClientConnectedEventArgs args)
+        private async Task MqttClient_ConnectedAsync(MqttClientConnectedEventArgs args)
         {
             WriteLog("The HomeAssistant MQTT client is connected.");
 
             ConnectedAndLoggedIn = true;
             RefreshDeviceSubscriptions();
-            return Task.CompletedTask;
+            await PublishKnownDeviceStatesAsync();
         }
 
         public void RefreshDeviceSubscriptions()
@@ -282,6 +282,90 @@ namespace MQTT_NET_COMELIT.HomeAssistant
             }
             WriteLog("HomeAssistant Publish: " + topic + " - " + payload, LogLevel.Debug);
             MQTTClient.PublishAsync(new MqttApplicationMessage() { Topic = topic, PayloadSegment = Encoding.ASCII.GetBytes(payload), Retain = retain });
+        }
+
+        public async Task PublishKnownDeviceStatesAsync()
+        {
+            if (!ConnectedAndLoggedIn || MQTTComelit?.HomeStructure?.Areas == null)
+            {
+                WriteLog("HomeAssistant MQTT state sync postponed: Comelit structure is not ready", LogLevel.Debug);
+                return;
+            }
+
+            if (MQTTComelit.ConnectedAndLoggedIn)
+            {
+                Publish(MQTTComelit.PollingStatus, "ON", true);
+                await Task.Delay(25);
+            }
+
+            foreach (Area area in MQTTComelit.HomeStructure.Areas)
+            {
+                foreach (Device dev in area.Devices)
+                {
+                    if (dev == null) continue;
+
+                    if (dev is ComelitSensor sensor)
+                    {
+                        Publish(sensor.StatusTopic, sensor.SensorValue);
+                        await Task.Delay(25);
+                        continue;
+                    }
+
+                    switch (dev.SubType)
+                    {
+                        case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
+                        case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
+                            Publish(dev.StatusTopic, dev.CoverState);
+                            await Task.Delay(25);
+                            break;
+                        default:
+                            if (!string.IsNullOrEmpty(dev.StatusTopic))
+                            {
+                                Publish(dev.StatusTopic, dev.StatusONOFF);
+                                await Task.Delay(25);
+                            }
+                            break;
+                    }
+
+                    switch (dev.SubType)
+                    {
+                        case Enums.OBJECT_SUBTYPE.DIMMER_LIGHT:
+                            if (dev is DimmerLight dimmer)
+                            {
+                                string bright = !string.IsNullOrEmpty(dimmer.Bright) ? dimmer.Bright : "0";
+                                Publish($"home/lights/{dev.GetIDForTopic()}/brightness/state", bright);
+                                await Task.Delay(25);
+                            }
+                            break;
+                        case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
+                        case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
+                            if (dev is ElectricBlind blind)
+                            {
+                                string pos = !string.IsNullOrEmpty(blind.OpenStatus) ? blind.OpenStatus : "0";
+                                Publish($"home/cover/{dev.GetIDForTopic()}/position/state", pos);
+                                await Task.Delay(25);
+                            }
+                            break;
+                        case Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER:
+                            if (dev is Clima clima)
+                            {
+                                if (!string.IsNullOrEmpty(clima.Temperatura))
+                                {
+                                    Publish($"home/climate/{dev.GetIDForTopic()}/current-temperature/state", NormalizeComelitTemperature(clima.Temperatura));
+                                    await Task.Delay(25);
+                                }
+                                if (!string.IsNullOrEmpty(clima.Umidita))
+                                {
+                                    Publish($"home/climate/{dev.GetIDForTopic()}/current-humidity/state", clima.Umidita);
+                                    await Task.Delay(25);
+                                }
+                                MQTTComelit.PublishClimateState(clima);
+                                await Task.Delay(25);
+                            }
+                            break;
+                    }
+                }
+            }
         }
 
         private static bool ShouldNormalizeBinaryPayload(string topic)

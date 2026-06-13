@@ -8,7 +8,7 @@ The application connects to the Comelit HUB, reads the home structure, publishes
 
 - MQTT connection to the Comelit HUB using IP address, MAC address, and Comelit credentials.
 - Automatic Home Assistant entity creation through MQTT Discovery.
-- Initial state synchronization on startup.
+- State synchronization on startup and after MQTT/Comelit reconnects.
 - MQTT command topic subscriptions to control Comelit devices from Home Assistant.
 - Periodic polling and automatic reconnect logic for MQTT/Home Assistant.
 - Configurable logging.
@@ -113,8 +113,9 @@ Startup flow:
 1. load configuration;
 2. connect to the MQTT broker/Home Assistant;
 3. connect to the Comelit HUB;
-4. publish discovery payloads and initial states;
-5. keep listening for MQTT commands and Comelit state updates.
+4. publish discovery payloads and current device states;
+5. re-publish known states after MQTT/Comelit reconnects;
+6. keep listening for MQTT commands and Comelit state updates.
 
 ## Tests
 
@@ -140,7 +141,7 @@ Main project structure:
 - Entities do not appear in Home Assistant: set `init-device-config` to `true`, restart, and verify that MQTT Discovery is enabled.
 - Commands are not received: check MQTT broker IP/credentials, then inspect logs for `/set` topic subscriptions.
 - HUB cannot be reached: verify IP address, MAC address, and network connectivity from the host/container running the app.
-- States are not updating: check `polling`, Comelit login logs, and MQTT broker availability.
+- States are not updating: check `polling`, Comelit login logs, MQTT broker availability, and reconnect logs.
 
 ## License
 

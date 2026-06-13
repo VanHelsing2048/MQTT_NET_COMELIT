@@ -78,77 +78,7 @@ internal class Program
                     File.WriteAllText(configFile, JsonConvert.SerializeObject(Config));
                 }
 
-                // Publish initial state for all known devices to Home Assistant
-                foreach (Area area in MQTTComelit.HomeStructure.Areas)
-                {
-                    foreach (Device dev in area.Devices)
-                    {
-                        if (dev == null) continue;
-
-                        if (dev is ComelitSensor sensor)
-                        {
-                            MQTTHomeAssistant.Publish(sensor.StatusTopic, sensor.SensorValue);
-                            await Task.Delay(25);
-                            continue;
-                        }
-
-                        // Device-specific initial state publishes
-                        switch (dev.SubType)
-                        {
-                            case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
-                            case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
-                                MQTTHomeAssistant.Publish(dev.StatusTopic, dev.CoverState);
-                                await Task.Delay(25);
-                                break;
-                            default:
-                                // Publish generic ON/OFF status if available
-                                if (!string.IsNullOrEmpty(dev.StatusTopic))
-                                {
-                                    MQTTHomeAssistant.Publish(dev.StatusTopic, dev.StatusONOFF);
-                                    await Task.Delay(25);
-                                }
-                                break;
-                        }
-
-                        switch (dev.SubType)
-                        {
-                            case Enums.OBJECT_SUBTYPE.DIMMER_LIGHT:
-                                if (dev is DimmerLight dimmer)
-                                {
-                                    string bright = !string.IsNullOrEmpty(dimmer.Bright) ? dimmer.Bright : "0";
-                                    MQTTHomeAssistant.Publish($"home/lights/{dev.GetIDForTopic()}/brightness/state", bright);
-                                    await Task.Delay(25);
-                                }
-                                break;
-                            case Enums.OBJECT_SUBTYPE.ELECTRIC_BLIND:
-                            case Enums.OBJECT_SUBTYPE.ENHANCED_ELECTRIC_BLIND:
-                                if (dev is ElectricBlind blind)
-                                {
-                                    string pos = !string.IsNullOrEmpty(blind.OpenStatus) ? blind.OpenStatus : "0";
-                                    MQTTHomeAssistant.Publish($"home/cover/{dev.GetIDForTopic()}/position/state", pos);
-                                    await Task.Delay(25);
-                                }
-                                break;
-                            case Enums.OBJECT_SUBTYPE.CLIMA_THERMOSTAT_DEHUMIDIFIER:
-                                if (dev is Clima clima)
-                                {
-                                    if (!string.IsNullOrEmpty(clima.Temperatura))
-                                    {
-                                        MQTTHomeAssistant.Publish($"home/climate/{dev.GetIDForTopic()}/current-temperature/state", NormalizeComelitTemperature(clima.Temperatura));
-                                        await Task.Delay(25);
-                                    }
-                                    if (!string.IsNullOrEmpty(clima.Umidita))
-                                    {
-                                        MQTTHomeAssistant.Publish($"home/climate/{dev.GetIDForTopic()}/current-humidity/state", clima.Umidita);
-                                        await Task.Delay(25);
-                                    }
-                                    MQTTComelit.PublishClimateState(clima);
-                                    await Task.Delay(25);
-                                }
-                                break;
-                        }
-                    }
-                }
+                await MQTTHomeAssistant.PublishKnownDeviceStatesAsync();
 
                 if (MQTTComelit.PollingDevice != null) MQTTComelit.StartPolling();
                 WriteLog("Ready");

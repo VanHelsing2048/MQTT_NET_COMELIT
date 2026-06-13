@@ -70,6 +70,10 @@ namespace MQTT_NET_COMELIT.Comelit
                                         }
                                         if (PollingDevice != null) break;
                                     }
+                                    if (MQTTHomeAssistant != null)
+                                    {
+                                        _ = MQTTHomeAssistant.PublishKnownDeviceStatesAsync();
+                                    }
                                 }
                                 break;
 
