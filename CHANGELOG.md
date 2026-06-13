@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.12
+## 1.1.13
 
 - Re-publish the current known Home Assistant MQTT states after the Home Assistant MQTT client reconnects.
 - Re-publish the current known Home Assistant MQTT states after the Comelit structure is rebuilt during login or reconnect.
